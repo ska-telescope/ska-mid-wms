@@ -1,0 +1,53 @@
+# macOS cruft
+.DS_Store
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST.skao.int
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+cov.xml
+.pytest_cache/
+.mypy_cache/
+
+# Sphinx documentation
+docs/_build/
+
+# Environments
+.env
+.venv
+env/
+*venv/
+ENV/
+env.bak/
+venv.bak/
+notes/
+logs/
+
+# Optional git hooks linked from .make submodule
+resources/git-hooks

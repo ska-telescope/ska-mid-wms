@@ -1,0 +1,18 @@
+[MAIN]
+; ignore=filename.py
+
+[FORMAT]
+max-line-length = 88
+
+[MESSAGES CONTROL]
+disable=
+    fixme,
+    logging-fstring-interpolation,
+    #invalid-name,  # conflicts with Tango naming conventions
+
+enable=
+    useless-suppression,
+
+[SIMILARITIES]
+min-similarity-lines=7
+ignore-imports=yes
