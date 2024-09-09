@@ -1,0 +1,53 @@
+[tool.poetry]
+include = ["MANIFEST.skao.int"]
+name = "ska-mid-wms"
+version = "0.0.1"
+description = "Interface for the SKA-Mid Weather Monitoring System"
+authors = ["Emma Arandjelovic <ela@observatorysciences.co.uk>"]
+license = "BSD-3-Clause"
+readme = "README.md"
+repository = "https://gitlab.com/ska-telescope/ska-mid-wms"
+
+[[tool.poetry.source]]
+name = "ska-nexus"
+url = "https://artefact.skao.int/repository/pypi-all/simple"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+pymodbus = "^3.7.0"
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.8.0"
+flake8 = "^7.1.0"
+isort = "^5.12.0"
+pylint = "^3.2.6"
+pylint-junit = "^0.3.2"
+pytest = "^8.3.0"
+pytest-cov = "^5.0.0"
+pytest-forked = "^1.4.0"
+pytest-json-report = "^1.4.1"
+flake8-docstrings = "^1.7.0"
+flake8-rst-docstrings = "^0.3.0"
+flake8-pyproject = "^1.2.3"
+mypy = "^1.9.0"
+
+[tool.poetry.group.docs.dependencies]
+Sphinx = "^7.4.0"
+sphinx-autodoc-typehints = "^2.3.0"
+ska-ser-sphinx-theme = "^0.2.0"
+sphinxcontrib-plantuml = "^0.30"
+
+[tool.mypy]
+disallow_incomplete_defs = true
+# ignore_missing_imports = true        # Ignore missing stubs in imported modules
+# disable_error_code = ""
+
+[tool.isort]
+profile = "black"
+
+[tool.black] # See https://black.readthedocs.io/en/stable/usage_and_configuration/the_basics.html#configuration-format
+line-length = 88
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
