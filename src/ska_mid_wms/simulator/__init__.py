@@ -5,6 +5,10 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-"""This package implements the SKA-Mid Weather Monitoring System."""
+"""This subpackage implements simulator functionality for the WMS."""
 
-# __all__ = []
+
+__all__ = [
+    "WMSSimulatorServer",
+]
+from .wms_simulator import WMSSimulatorServer

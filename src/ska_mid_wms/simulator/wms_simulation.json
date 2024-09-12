@@ -1,0 +1,83 @@
+{
+    "server_list": {
+        "WMSServer": {
+            "comm": "tcp",
+            "host": "0.0.0.0",
+            "port": 502,
+            "ignore_missing_slaves": false,
+            "framer": "socket",
+            "identity": {
+                "VendorName": "ACROMAG",
+                "ProductCode": "961EN-4006",
+                "VendorUrl": "https://www.acromag.com",
+                "ProductName": "BusWorks",
+                "ModelName": "961EN-4006",
+                "MajorMinorRevision": "9300-118"
+            }
+        }
+    },
+    "device_list": {
+        "station1": {
+            "setup": {
+                "co size": 0,
+                "di size": 0,
+                "hr size": 137,
+                "ir size": 21,
+                "shared blocks": false,
+                "type exception": true,
+                "defaults": {
+                    "value": {
+                        "bits": 0,
+                        "uint16": 0,
+                        "uint32": 0,
+                        "float32": 0.0,
+                        "string": " "
+                    },
+                    "action": {
+                        "bits": null,
+                        "uint16": null,
+                        "uint32": null,
+                        "float32": null,
+                        "string": null
+                    }
+                }
+            },
+            "invalid": [
+                1,
+                14
+            ],
+            "write": [],
+            "bits": [],
+            "uint32": [],
+            "float32": [],
+            "string": [],
+            "repeat": [],
+            "uint16": [
+                {
+                    "addr": 15,
+                    "value": 126
+                },
+                {
+                    "addr": 16,
+                    "value": 22251
+                },
+                {
+                    "addr": 17,
+                    "value": 153
+                },
+                {
+                    "addr": 18,
+                    "value": 8192
+                },
+                {
+                    "addr": 19,
+                    "value": 943
+                },
+                {
+                    "addr": 20,
+                    "value": 117
+                }
+            ]
+        }
+    }
+}
