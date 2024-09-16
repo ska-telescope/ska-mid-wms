@@ -1418,6 +1418,29 @@ url = "https://artefact.skao.int/repository/pypi-all/simple"
 reference = "ska-nexus"
 
 [[package]]
+name = "pytest-asyncio"
+version = "0.24.0"
+description = "Pytest support for asyncio"
+optional = false
+python-versions = ">=3.8"
+files = [
+    {file = "pytest_asyncio-0.24.0-py3-none-any.whl", hash = "sha256:a811296ed596b69bf0b6f3dc40f83bcaf341b155a269052d82efa2b25ac7037b"},
+    {file = "pytest_asyncio-0.24.0.tar.gz", hash = "sha256:d081d828e576d85f875399194281e92bf8a68d60d72d1a2faf2feddb6c46b276"},
+]
+
+[package.dependencies]
+pytest = ">=8.2,<9"
+
+[package.extras]
+docs = ["sphinx (>=5.3)", "sphinx-rtd-theme (>=1.0)"]
+testing = ["coverage (>=6.2)", "hypothesis (>=5.7.1)"]
+
+[package.source]
+type = "legacy"
+url = "https://artefact.skao.int/repository/pypi-all/simple"
+reference = "ska-nexus"
+
+[[package]]
 name = "pytest-cov"
 version = "5.0.0"
 description = "Pytest plugin for measuring coverage."
@@ -2033,4 +2056,4 @@ reference = "ska-nexus"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "7d34657507ade9a8c9db081b0045407323e397b2aa3b28481b87bb6d20ae4356"
+content-hash = "96a2d84d5469d6eed0c9c8bc86802d57fcc7ced45e12b8d3437d601f827e6f63"

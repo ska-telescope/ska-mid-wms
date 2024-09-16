@@ -18,20 +18,26 @@ logger = logging.getLogger()
 class WMSSimulatorServer:
     """Simulate the h/w for a Weather Station by responding to Modbus requests."""
 
-    def __init__(self) -> None:
-        """Initialise the simulator server."""
+    def __init__(self, config_path: str) -> None:
+        """Initialise the simulator server.
+
+        :param config_path: path to a configuration file
+        """
         self.simulator = ModbusSimulatorServer(
             modbus_server="WMSServer",
             modbus_device="station1",
-            json_file="wms_simulation.json",
+            json_file=config_path,
         )
 
-    async def start(self):
-        """Start the simulator."""
-        logger.info("Starting Modbus simulator server...")
-        await self.simulator.run_forever(only_start=False)
+    async def start(self, only_start: bool) -> None:
+        """Start the simulator.
 
-    async def stop(self):
+        :param only_start: set to True to return after starting.
+        """
+        logger.info("Starting Modbus simulator server...")
+        await self.simulator.run_forever(only_start=only_start)
+
+    async def stop(self) -> None:
         """Stop the simulator."""
         logger.info("Stopping Modbus simulator server...")
         await self.simulator.stop()
@@ -39,9 +45,9 @@ class WMSSimulatorServer:
 
 async def main():
     """Create and start the Modbus simulator server."""
-    server = WMSSimulatorServer()
+    server = WMSSimulatorServer("wms_simulation.json")
     try:
-        await server.start()
+        await server.start(False)
     except KeyboardInterrupt:
         logger.info("Received keyboard interrupt, shutting down.")
     finally:
