@@ -5,7 +5,7 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-"""This module provides a simulator for the Weather Monitoring System (WMS)."""
+"""This module provides a simulator server for the Weather Monitoring System (WMS)."""
 import asyncio
 import logging
 
@@ -27,6 +27,7 @@ class WMSSimulatorServer:
             modbus_server="WMSServer",
             modbus_device="station1",
             json_file=config_path,
+            custom_actions_module="ska_mid_wms.simulator.wms_sim",
         )
 
     async def start(self, only_start: bool) -> None:
@@ -43,9 +44,9 @@ class WMSSimulatorServer:
         await self.simulator.stop()
 
 
-async def main():
+async def main(*args: str) -> None:
     """Create and start the Modbus simulator server."""
-    server = WMSSimulatorServer("wms_simulation.json")
+    server = WMSSimulatorServer(*args)
     try:
         await server.start(False)
     except KeyboardInterrupt:
@@ -56,4 +57,6 @@ async def main():
 
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    import sys
+
+    asyncio.run(main(sys.argv[1]))

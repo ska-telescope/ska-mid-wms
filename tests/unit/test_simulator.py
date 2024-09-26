@@ -15,7 +15,7 @@ from pymodbus.pdu.mei_message import ReadDeviceInformationResponse
 from pymodbus.pdu.pdu import ExceptionResponse
 from pymodbus.pdu.register_read_message import ReadInputRegistersResponse
 
-from ska_mid_wms.simulator import WMSSimulatorServer
+from ska_mid_wms.simulator import WMSSimulatorServer, wms_sim
 
 
 @pytest.fixture(name="simulator_config_path", scope="session")
@@ -48,7 +48,7 @@ async def wms_client_fixture(
     :param wms_simulator: a running WMS Simulator Server
     """
     assert wms_simulator is not None
-    client = AsyncModbusTcpClient("localhost", port=502)
+    client = AsyncModbusTcpClient("localhost", port=502, timeout=30)
     await client.connect()
     yield client
     client.close()
@@ -70,17 +70,28 @@ class TestWMSSimulator:
         assert deviceinfo.information[1].decode("ASCII") == "961EN-4006"
 
     @pytest.mark.asyncio(loop_scope="module")
-    async def test_read_uint16(self, wms_client: AsyncModbusTcpClient) -> None:
+    async def test_read_uint16(
+        self,
+        wms_client: AsyncModbusTcpClient,
+    ) -> None:
         """Test we can read the six sensor registers.
 
         :param wms_client: a Modbus TCP client connected to the simulation server.
         """
         assert wms_client.connected
 
+        # Set the register raw values
+        wms_sim.simulator.wind_speed = 20
+        wms_sim.simulator.wind_direction = 21
+        wms_sim.simulator.temperature = 99
+        wms_sim.simulator.pressure = 99
+        wms_sim.simulator.humidity = 26
+        wms_sim.simulator.rainfall = 299
+
         # Read 6 registers from address 15 on slave 1
         response = await wms_client.read_input_registers(15, 6, 1)
         assert isinstance(response, ReadInputRegistersResponse)
-        assert response.registers == [126, 22251, 153, 8192, 943, 117]
+        assert response.registers == [20, 21, 99, 99, 26, 299]
 
     @pytest.mark.asyncio(loop_scope="module")
     async def test_read_invalid_register(
@@ -92,7 +103,7 @@ class TestWMSSimulator:
         """
         assert wms_client.connected
 
-        # Read 1 register at address 1 on slave 1
-        response = await wms_client.read_input_registers(1, 1, 1)
+        # Read 1 register at address 14 on slave 1
+        response = await wms_client.read_input_registers(1, 14, 1)
         assert isinstance(response, ExceptionResponse)
         assert response.exception_code == ModbusExceptions.IllegalAddress
