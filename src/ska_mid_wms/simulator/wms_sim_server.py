@@ -23,7 +23,7 @@ class WMSSimulatorServer:
 
         :param config_path: path to a configuration file
         """
-        self.simulator = ModbusSimulatorServer(
+        self.server = ModbusSimulatorServer(
             modbus_server="WMSServer",
             modbus_device="station1",
             json_file=config_path,
@@ -36,12 +36,12 @@ class WMSSimulatorServer:
         :param only_start: set to True to return after starting.
         """
         logger.info("Starting Modbus simulator server...")
-        await self.simulator.run_forever(only_start=only_start)
+        await self.server.run_forever(only_start=only_start)
 
     async def stop(self) -> None:
         """Stop the simulator."""
         logger.info("Stopping Modbus simulator server...")
-        await self.simulator.stop()
+        await self.server.stop()
 
 
 async def main(*args: str) -> None:

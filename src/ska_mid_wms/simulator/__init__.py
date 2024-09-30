@@ -11,6 +11,7 @@
 __all__ = [
     "WMSSimulatorServer",
     "WMSSimulator",
+    "WMSSimSensor",
 ]
-from .wms_sim import WMSSimulator
+from .wms_sim import WMSSimSensor, WMSSimulator
 from .wms_sim_server import WMSSimulatorServer

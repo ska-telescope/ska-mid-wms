@@ -6,7 +6,7 @@
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
 """This module provides unit tests for the Weather Monitoring System simulation."""
-from typing import AsyncGenerator
+import time
 
 import pytest
 from pymodbus.client import AsyncModbusTcpClient
@@ -15,49 +15,103 @@ from pymodbus.pdu.mei_message import ReadDeviceInformationResponse
 from pymodbus.pdu.pdu import ExceptionResponse
 from pymodbus.pdu.register_read_message import ReadInputRegistersResponse
 
-from ska_mid_wms.simulator import WMSSimulatorServer, wms_sim
-
-
-@pytest.fixture(name="simulator_config_path", scope="session")
-def simulator_config_path_fixture() -> str:
-    """
-    Fixture to provide the path to the simulator configuration file.
-
-    :return: path to the simulator configuration file to be used in these tests.
-    """
-    return "tests/data/wms_simulation.json"
-
-
-@pytest.fixture(name="wms_simulator", scope="module")
-async def wms_simulator_fixture(
-    simulator_config_path: str,
-) -> AsyncGenerator[WMSSimulatorServer, None]:
-    """Fixture that starts a WMS simulator server."""
-    server = WMSSimulatorServer(simulator_config_path)
-    await server.start(True)
-    yield server
-    await server.stop()
-
-
-@pytest.fixture(name="wms_client", scope="module")
-async def wms_client_fixture(
-    wms_simulator: WMSSimulatorServer,
-) -> AsyncGenerator[AsyncModbusTcpClient, None]:
-    """Fixture that creates a TCP client and connects to the Modbus server.
-
-    :param wms_simulator: a running WMS Simulator Server
-    """
-    assert wms_simulator is not None
-    client = AsyncModbusTcpClient("localhost", port=502, timeout=30)
-    await client.connect()
-    yield client
-    client.close()
+from ska_mid_wms.simulator import WMSSimSensor, WMSSimulator
 
 
 class TestWMSSimulator:
     """Test the WMS Simulator."""
 
-    @pytest.mark.asyncio(loop_scope="module")
+    @pytest.mark.parametrize(
+        ["input_value", "expected_result"],
+        [
+            pytest.param(
+                41,
+                26869,
+            ),
+            pytest.param(
+                21.4,
+                14024,
+            ),
+            pytest.param(100, 65535),
+            pytest.param(0, 0),
+        ],
+    )
+    def test_engineering_to_raw(
+        self,
+        simulated_sensor: WMSSimSensor,
+        input_value: float,
+        expected_result: int,
+    ) -> None:
+        """
+        Test conversion function between engineering values and register values.
+
+        :param input: the input in engineering units
+        :param expected_result: the expected result in raw ADC counts
+        """
+        simulated_sensor.engineering_value = input_value
+        assert simulated_sensor.raw_value == expected_result
+
+    @pytest.mark.parametrize(
+        ["input_value", "expected_result"],
+        [
+            pytest.param(
+                26869,
+                41,
+            ),
+            pytest.param(14024, 21.4),
+            pytest.param(65535, 100),
+            pytest.param(0, 0),
+        ],
+    )
+    def test_raw_to_engineering(
+        self,
+        simulated_sensor: WMSSimSensor,
+        input_value: int,
+        expected_result: float,
+    ) -> None:
+        """
+        Test conversion function between register values and engineering values.
+
+        :param input: the input in raw ADC counts
+        :param expected_result: the expected result in engineering units.
+        """
+        simulated_sensor.raw_value = input_value
+        assert simulated_sensor.engineering_value == pytest.approx(
+            expected_result, rel=0.0001
+        )
+
+    def test_sim_data_generator(self, simulator: WMSSimulator) -> None:
+        """Test the simulator generates changing data."""
+        assert simulator.humidity == WMSSimulator.DEFAULT_HUMIDITY
+        assert simulator.temperature == WMSSimulator.DEFAULT_TEMPERATURE
+        assert simulator.rainfall == WMSSimulator.DEFAULT_RAINFALL
+        assert simulator.pressure == WMSSimulator.DEFAULT_PRESSURE
+        assert simulator.wind_direction == WMSSimulator.DEFAULT_WIND_DIRECTION
+        assert simulator.wind_speed == WMSSimulator.DEFAULT_WIND_SPEED
+        simulator.start_sim_threads()
+        time.sleep(simulator.LONGEST_UPDATE_CYCLE + 1)
+        assert simulator.humidity != WMSSimulator.DEFAULT_HUMIDITY
+        assert simulator.temperature != WMSSimulator.DEFAULT_TEMPERATURE
+        assert simulator.rainfall != WMSSimulator.DEFAULT_RAINFALL
+        assert simulator.pressure != WMSSimulator.DEFAULT_PRESSURE
+        assert simulator.wind_direction != WMSSimulator.DEFAULT_WIND_DIRECTION
+        assert simulator.wind_speed != WMSSimulator.DEFAULT_WIND_SPEED
+
+    def test_set_sim_value(self, simulator: WMSSimulator) -> None:
+        """Test we can set simulation values manually."""
+        simulator.wind_speed = 26700
+        simulator.wind_direction = 36125
+        time.sleep(
+            min(
+                simulator.WIND_SPEED_UPDATE_FREQUENCY,
+                simulator.WIND_DIRECTION_UPDATE_FREQUENCY,
+            )
+            + 1
+        )
+        assert simulator.wind_speed == 26700
+        assert simulator.wind_direction == 36125
+
+    @pytest.mark.asyncio(loop_scope="function")
     async def test_read_device_info(self, wms_client: AsyncModbusTcpClient) -> None:
         """Test we can read the device info.
 
@@ -69,7 +123,7 @@ class TestWMSSimulator:
         assert deviceinfo.information[0].decode("ASCII") == "ACROMAG"
         assert deviceinfo.information[1].decode("ASCII") == "961EN-4006"
 
-    @pytest.mark.asyncio(loop_scope="module")
+    @pytest.mark.asyncio(loop_scope="function")
     async def test_read_uint16(
         self,
         wms_client: AsyncModbusTcpClient,
@@ -80,20 +134,21 @@ class TestWMSSimulator:
         """
         assert wms_client.connected
 
-        # Set the register raw values
-        wms_sim.simulator.wind_speed = 20
-        wms_sim.simulator.wind_direction = 21
-        wms_sim.simulator.temperature = 99
-        wms_sim.simulator.pressure = 99
-        wms_sim.simulator.humidity = 26
-        wms_sim.simulator.rainfall = 299
+        expected_results = [
+            WMSSimulator.DEFAULT_WIND_SPEED,
+            WMSSimulator.DEFAULT_WIND_DIRECTION,
+            WMSSimulator.DEFAULT_TEMPERATURE,
+            WMSSimulator.DEFAULT_PRESSURE,
+            WMSSimulator.DEFAULT_HUMIDITY,
+            WMSSimulator.DEFAULT_RAINFALL,
+        ]
 
         # Read 6 registers from address 15 on slave 1
         response = await wms_client.read_input_registers(15, 6, 1)
         assert isinstance(response, ReadInputRegistersResponse)
-        assert response.registers == [20, 21, 99, 99, 26, 299]
+        assert response.registers == expected_results
 
-    @pytest.mark.asyncio(loop_scope="module")
+    @pytest.mark.asyncio(loop_scope="function")
     async def test_read_invalid_register(
         self, wms_client: AsyncModbusTcpClient
     ) -> None:
@@ -103,7 +158,7 @@ class TestWMSSimulator:
         """
         assert wms_client.connected
 
-        # Read 1 register at address 14 on slave 1
+        # Read 1 register at (invalid) address 14 on slave 1
         response = await wms_client.read_input_registers(1, 14, 1)
         assert isinstance(response, ExceptionResponse)
         assert response.exception_code == ModbusExceptions.IllegalAddress
