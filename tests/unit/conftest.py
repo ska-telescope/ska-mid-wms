@@ -8,7 +8,7 @@
 """This module provides test fixtures for the Weather Monitoring System."""
 
 import importlib
-from typing import AsyncGenerator, Generator
+from typing import AsyncGenerator, Dict, Generator
 
 import pytest
 from pymodbus.client import AsyncModbusTcpClient
@@ -43,24 +43,32 @@ def simulator_fixture() -> Generator[WMSSimulator, None, None]:
     wms_sim.simulator.stop_sim_threads()
 
 
-@pytest.fixture(name="simulator_config_path", scope="module")
-def simulator_config_path_fixture() -> str:
+@pytest.fixture(name="simulator_config", scope="module")
+def simulator_config_fixture() -> Dict[str, str]:
     """
-    Fixture to provide the path to the simulator configuration file.
+    Fixture to provide the configuration for the simulator.
 
-    :return: path to the simulator configuration file to be used in these tests.
+    :return: simulator configuration dictionary.
     """
-    return "tests/data/wms_simulation.json"
+    return {
+        "config_path": "tests/data/wms_simulation.json",
+        "server_name": "WMSServer",
+        "device_name": "station1",
+    }
 
 
 @pytest.fixture(name="wms_simulator_server")
 async def wms_simulator_server_fixture(
-    simulator_config_path: str,
+    simulator_config: Dict[str, str],
     simulator: WMSSimulator,
 ) -> AsyncGenerator[WMSSimulatorServer, None]:
     """Fixture that starts a WMS simulator server."""
     assert simulator is not None
-    server = WMSSimulatorServer(simulator_config_path)
+    server = WMSSimulatorServer(
+        config_path=simulator_config["config_path"],
+        server_name=simulator_config["server_name"],
+        device_name=simulator_config["device_name"],
+    )
     await server.start(True)
     yield server
     await server.stop()

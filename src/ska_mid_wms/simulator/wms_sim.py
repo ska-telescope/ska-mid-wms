@@ -12,6 +12,7 @@ import time
 from threading import Thread
 from typing import Final
 
+import numpy as np
 import pymodbus.datastore.simulator
 
 ADC_FULL_SCALE = 2**16 - 1  # Max value produced by the ADC in raw counts
@@ -27,13 +28,24 @@ class WMSSimSensor:
 
         :param update_frequency: update rate in Hz.
         """
-        while self._generate:
-            # TODO: Generate more realistic data
-            new_value = random.randint(0, ADC_FULL_SCALE)
-            if new_value == self.raw_value:
-                continue  # Tests assume value changes each cycle
-            self.raw_value = new_value
-            time.sleep(1 / update_frequency)
+        # Create a sine wave between two random points (allowing room for noise)
+        signal_start = random.randint(0, math.floor(ADC_FULL_SCALE / 2))
+        signal_end = random.randint(signal_start + 500, ADC_FULL_SCALE - 10000)
+        signal_range = signal_end - signal_start
+        time_array = np.arange(0.0, np.pi * 2, 0.001)
+        sine_wave = (
+            signal_start + (signal_range / 2) + np.sin(time_array) * (signal_range / 2)
+        )
+        # Inject some noise
+        noise_width = random.randint(1, 10) / 100 * signal_range
+        noise = np.random.normal(0, noise_width, len(sine_wave))
+        signal = sine_wave + noise
+        while True:
+            for datapoint in signal:
+                if not self._generate:
+                    return
+                self.raw_value = math.floor(datapoint)
+                time.sleep(1 / update_frequency)
 
     def __init__(
         self,
@@ -178,12 +190,12 @@ class WMSSimulator:
         self._wind_speed_sensor.raw_value = value
 
     @property
-    def converted_wind_speed(self) -> int:
+    def converted_wind_speed(self) -> float:
         """Wind speed in engineering units."""
         return self._wind_speed_sensor.engineering_value
 
     @converted_wind_speed.setter
-    def converted_wind_speed(self, value: int) -> None:
+    def converted_wind_speed(self, value: float) -> None:
         self._wind_speed_sensor.engineering_value = value
 
     @property
@@ -196,12 +208,12 @@ class WMSSimulator:
         self._wind_direction_sensor.raw_value = value
 
     @property
-    def converted_wind_direction(self) -> int:
+    def converted_wind_direction(self) -> float:
         """Wind directon in engineering units."""
         return self._wind_direction_sensor.engineering_value
 
     @converted_wind_direction.setter
-    def converted_wind_direction(self, value: int) -> None:
+    def converted_wind_direction(self, value: float) -> None:
         self._wind_direction_sensor.engineering_value = value
 
     @property
@@ -214,12 +226,12 @@ class WMSSimulator:
         self._temperature_sensor.raw_value = value
 
     @property
-    def converted_temperature(self) -> int:
+    def converted_temperature(self) -> float:
         """Temperature in engineering units."""
         return self._temperature_sensor.engineering_value
 
     @converted_temperature.setter
-    def converted_temperature(self, value: int) -> None:
+    def converted_temperature(self, value: float) -> None:
         self._temperature_sensor.engineering_value = value
 
     @property
@@ -232,12 +244,12 @@ class WMSSimulator:
         self._humidity_sensor.raw_value = value
 
     @property
-    def converted_humidity(self) -> int:
+    def converted_humidity(self) -> float:
         """Humidity in engineering units."""
         return self._humidity_sensor.engineering_value
 
     @converted_humidity.setter
-    def converted_humidity(self, value: int) -> None:
+    def converted_humidity(self, value: float) -> None:
         self._humidity_sensor.engineering_value = value
 
     @property
@@ -250,12 +262,12 @@ class WMSSimulator:
         self._pressure_sensor.raw_value = value
 
     @property
-    def converted_pressure(self) -> int:
+    def converted_pressure(self) -> float:
         """Pressure in engineering units."""
         return self._pressure_sensor.engineering_value
 
     @converted_pressure.setter
-    def converted_pressure(self, value: int) -> None:
+    def converted_pressure(self, value: float) -> None:
         self._pressure_sensor.engineering_value = value
 
     @property
@@ -268,14 +280,15 @@ class WMSSimulator:
         self._rainfall_sensor.raw_value = value
 
     @property
-    def converted_rainfall(self) -> int:
+    def converted_rainfall(self) -> float:
         """Rainfall in engineering units."""
         return self._rainfall_sensor.engineering_value
 
     @converted_rainfall.setter
-    def converted_rainfall(self, value: int) -> None:
+    def converted_rainfall(self, value: float) -> None:
         self._rainfall_sensor.engineering_value = value
 
+    # Custom action methods called by Pymodbus
     def wind_speed_cell(
         self,
         _registers: list[pymodbus.datastore.simulator.Cell],
@@ -333,6 +346,7 @@ class WMSSimulator:
 
 simulator = WMSSimulator()
 
+# Declare the customs_actions dict needed by Pymodbus
 custom_actions_dict = {
     "wind_speed": simulator.wind_speed_cell,
     "wind_direction": simulator.wind_direction_cell,
