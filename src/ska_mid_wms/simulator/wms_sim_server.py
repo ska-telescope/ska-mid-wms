@@ -33,6 +33,7 @@ class WMSSimulatorServer:
         :param config_path: path to a configuration file
         :param server_name: name of server in config file
         :param device_name: name of device in config file
+        :param logger: Logger object to use (optional)
         """
         self.server = ModbusSimulatorServer(
             modbus_server=server_name,
@@ -84,7 +85,9 @@ async def main(argv: list[str]) -> None:
         required=True,
     )
     parser.add_argument("-s", "--server", help="name of server to start", required=True)
-    parser.add_argument("-d", "--device", help="name of device to start", required=True)
+    parser.add_argument(
+        "-d", "--device", help="name of device to simulate", required=True
+    )
     args = parser.parse_args(argv)
     server = WMSSimulatorServer(
         config_path=args.config,

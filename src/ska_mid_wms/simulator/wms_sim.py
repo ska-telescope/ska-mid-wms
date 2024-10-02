@@ -23,8 +23,8 @@ class WMSSimSensor:
 
     # pylint: disable=too-many-instance-attributes
 
-    def generate_new_value(self, update_frequency: float) -> None:
-        """Generate a new value for the sensor.
+    def generate_data(self, update_frequency: float) -> None:
+        """Generate changing data for the sensor.
 
         :param update_frequency: update rate in Hz.
         """
@@ -43,7 +43,7 @@ class WMSSimSensor:
         while True:
             for datapoint in signal:
                 if not self._generate:
-                    return
+                    return  # Exit here: request to stop generating has been made
                 self.raw_value = math.floor(datapoint)
                 time.sleep(1 / update_frequency)
 
@@ -67,9 +67,7 @@ class WMSSimSensor:
         self._engineering_value = self.convert_raw_to_egu(init_value)
 
         self._generate: bool = False
-        self._sim_thread = Thread(
-            target=self.generate_new_value, args=[update_frequency]
-        )
+        self._sim_thread = Thread(target=self.generate_data, args=[update_frequency])
 
     def start_generating_data(self) -> None:
         """Start generating data."""
