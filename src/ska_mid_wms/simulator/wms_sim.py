@@ -15,7 +15,7 @@ from typing import Final
 import numpy as np
 import pymodbus.datastore.simulator
 
-ADC_FULL_SCALE = 2**16 - 1  # Max value produced by the ADC in raw counts
+ADC_FULL_SCALE: Final = 2**16 - 1  # Max value produced by the ADC in raw counts
 
 
 class WMSSimSensor:
