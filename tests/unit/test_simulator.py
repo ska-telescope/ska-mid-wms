@@ -7,6 +7,7 @@
 # See LICENSE for more info.
 """This module provides unit tests for the Weather Monitoring System simulation."""
 import time
+from typing import List
 
 import pytest
 from pymodbus.client import AsyncModbusTcpClient
@@ -88,14 +89,40 @@ class TestWMSSimulator:
         assert simulator.pressure == WMSSimulator.DEFAULT_PRESSURE
         assert simulator.wind_direction == WMSSimulator.DEFAULT_WIND_DIRECTION
         assert simulator.wind_speed == WMSSimulator.DEFAULT_WIND_SPEED
+
+        # Generate a few cycles in case the data generator happens to generate
+        # the default value again
+
+        humidity: List[bool] = []
+        temperature: List[bool] = []
+        rainfall: List[bool] = []
+        pressure: List[bool] = []
+        wind_direction: List[bool] = []
+        wind_speed: List[bool] = []
+
+        def get_new_values():
+            humidity.append(simulator.humidity == WMSSimulator.DEFAULT_HUMIDITY)
+            temperature.append(
+                simulator.temperature == WMSSimulator.DEFAULT_TEMPERATURE
+            )
+            rainfall.append(simulator.rainfall == WMSSimulator.DEFAULT_RAINFALL)
+            pressure.append(simulator.pressure == WMSSimulator.DEFAULT_PRESSURE)
+            wind_direction.append(
+                simulator.wind_direction == WMSSimulator.DEFAULT_WIND_DIRECTION
+            )
+            wind_speed.append(simulator.wind_speed == WMSSimulator.DEFAULT_WIND_SPEED)
+
         simulator.start_sim_threads()
-        time.sleep(simulator.LONGEST_UPDATE_CYCLE + 1)
-        assert simulator.humidity != WMSSimulator.DEFAULT_HUMIDITY
-        assert simulator.temperature != WMSSimulator.DEFAULT_TEMPERATURE
-        assert simulator.rainfall != WMSSimulator.DEFAULT_RAINFALL
-        assert simulator.pressure != WMSSimulator.DEFAULT_PRESSURE
-        assert simulator.wind_direction != WMSSimulator.DEFAULT_WIND_DIRECTION
-        assert simulator.wind_speed != WMSSimulator.DEFAULT_WIND_SPEED
+        for _ in range(4):
+            time.sleep(simulator.LONGEST_UPDATE_CYCLE)
+            get_new_values()
+
+        assert not all(humidity)
+        assert not all(temperature)
+        assert not all(rainfall)
+        assert not all(pressure)
+        assert not all(wind_direction)
+        assert not all(wind_speed)
 
     def test_set_sim_value(self, simulator: WMSSimulator) -> None:
         """Test we can set simulation values manually."""
