@@ -130,18 +130,18 @@ class WMSSimulator:
     DEFAULT_RAINFALL: Final = 2883  # 22 mm
 
     # Update frequencies for data generation (Hz)
-    WIND_SPEED_UPDATE_FREQUENCY: Final = 1
-    WIND_DIRECTION_UPDATE_FREQUENCY: Final = 2
-    TEMPERATURE_UPDATE_FREQUENCY: Final = 3
-    PRESSURE_UPDATE_FREQUENCY: Final = 5
-    HUMIDITY_UPDATE_FREQUENCY: Final = 10
-    RAINFALL_UPDATE_FREQUENCY: Final = 5
+    WIND_SPEED_UPDATE_FREQUENCY: Final = 0.1
+    WIND_DIRECTION_UPDATE_FREQUENCY: Final = 0.1
+    TEMPERATURE_UPDATE_FREQUENCY: Final = 1
+    PRESSURE_UPDATE_FREQUENCY: Final = 1
+    HUMIDITY_UPDATE_FREQUENCY: Final = 1
+    RAINFALL_UPDATE_FREQUENCY: Final = 1
     LONGEST_UPDATE_CYCLE: Final = HUMIDITY_UPDATE_FREQUENCY
 
     def __init__(self):
         """Initialise the simulator."""
         self._wind_speed_sensor = WMSSimSensor(
-            0, 40, self.DEFAULT_WIND_SPEED, self.WIND_SPEED_UPDATE_FREQUENCY
+            0, 70, self.DEFAULT_WIND_SPEED, self.WIND_SPEED_UPDATE_FREQUENCY
         )
         self._wind_direction_sensor = WMSSimSensor(
             0, 360, self.DEFAULT_WIND_DIRECTION, self.WIND_DIRECTION_UPDATE_FREQUENCY
