@@ -59,7 +59,7 @@ class WMSSimSensor:
         :param min_value: Minimum value in engineering units.
         :param max_value: Maximum value in engineering units.
         :param init_value: Initial value in raw ADC counts.
-        :param: update_frequency: Update frequency in Hz.
+        :param update_frequency: Update frequency in Hz.
         """
         self._min_value = min_value
         self._range = max_value - min_value

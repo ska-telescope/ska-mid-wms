@@ -8,6 +8,8 @@
 """This module provides test fixtures for the Weather Monitoring System."""
 
 import importlib
+import logging
+from logging import Logger
 from typing import AsyncGenerator, Dict, Generator
 
 import pytest
@@ -19,6 +21,7 @@ from ska_mid_wms.simulator import (
     WMSSimulatorServer,
     wms_sim,
 )
+from ska_mid_wms.wms_interface import WeatherStation
 
 
 @pytest.fixture(name="simulated_sensor")
@@ -57,6 +60,20 @@ def simulator_config_fixture() -> Dict[str, str]:
     }
 
 
+@pytest.fixture(scope="session", name="logger")
+def logger_fixture() -> logging.Logger:
+    """
+    Fixture that returns a default logger.
+
+    The logger will be set to DEBUG level.
+
+    :returns: a logger.
+    """
+    debug_logger = logging.getLogger()
+    debug_logger.setLevel(logging.DEBUG)
+    return debug_logger
+
+
 @pytest.fixture(name="wms_simulator_server")
 async def wms_simulator_server_fixture(
     simulator_config: Dict[str, str],
@@ -87,3 +104,18 @@ async def wms_client_fixture(
     await client.connect()
     yield client
     client.close()
+
+
+@pytest.fixture(name="weather_station")
+async def wms_interface_fixture(
+    wms_simulator_server: WMSSimulatorServer, logger: Logger
+) -> AsyncGenerator[WeatherStation, None]:
+    """Fixture that creates a WeatherStation and connects it to a running simulation.
+
+    :param wms_simulator_server: a running WMS Simulator Server
+    """
+    assert wms_simulator_server is not None
+    weather_station = await WeatherStation.create_weather_station("", logger)
+    await weather_station.connect()
+    yield weather_station
+    weather_station.disconnect()

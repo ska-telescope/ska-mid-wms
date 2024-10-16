@@ -7,7 +7,6 @@
 # See LICENSE for more info.
 """This subpackage implements the Modbus interface for the WMS."""
 
-__all__ = ["Sensor", "WeatherStation"]
+__all__ = ["WeatherStation"]
 
-from .sensor import Sensor
 from .weather_station import WeatherStation
