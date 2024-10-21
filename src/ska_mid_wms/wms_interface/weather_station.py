@@ -16,6 +16,7 @@ from asyncio import Task
 from asyncio.queues import Queue
 from dataclasses import dataclass
 from datetime import datetime, timezone
+from enum import Enum
 from typing import Any, Callable, Dict, Final
 
 from pymodbus.client import AsyncModbusTcpClient
@@ -77,6 +78,17 @@ class WMSDatapoint:
     timestamp: datetime  # timestamp of the reading
 
 
+class SensorEnum(Enum):
+    """Enumeration type for Sensors."""
+
+    WIND_SPEED = "wind_speed"
+    WIND_DIRECTION = "wind_direction"
+    TEMPERATURE = "temperature"
+    PRESSURE = "pressure"
+    HUMIDITY = "humidity"
+    RAINFALL = "rainfall"
+
+
 class WMSPoller:
     """Class to implement polling the WMS hardware."""
 
@@ -84,6 +96,7 @@ class WMSPoller:
         self,
         client: AsyncModbusTcpClient,
         logger: logging.Logger,
+        sensors: list[Sensor],
         poll_interval: float = 1,
     ) -> None:
         """Initialise the instance."""
@@ -96,6 +109,7 @@ class WMSPoller:
         ]  # Each Modbus request is a list of sensors with contiguous registers
         self.data_queue: Queue = Queue()
         self.poll_interval = poll_interval
+        self.update_request_list(sensors)
 
     async def _poll(self) -> None:
         """Poll the hardware periodically for new data."""
@@ -242,7 +256,7 @@ class WeatherStation:
         :param config_file: Path to a configuration yaml file.
         :param logger: A logging object.
         """
-        # TODO: Read the host and port from a configuration file
+        # TODO: Read the host and port from a configuration file (WOM-503)
         logger.info(f"Reading configuration file {config_file}")
 
         self._sensors: list[Sensor] = []
@@ -259,9 +273,8 @@ class WeatherStation:
         await self.connect()
         self._logger.info("Connected Modbus TCP client to address localhost, port 502")
 
-        self._poller = WMSPoller(self._client, self._logger)
+        self._poller = WMSPoller(self._client, self._logger, self._sensors)
         self._publisher = WMSPublisher(self._poller.data_queue, self._logger)
-        self.configure_poll_sensors(self._sensors)
 
     @property
     def poll_interval(self) -> float:
@@ -286,13 +299,15 @@ class WeatherStation:
             Sensor(20, "rainfall", "Rainfall", "mm", 500, 0),
         ]
 
-    # TODO: Convert to accept list of Enums (to be done in WOM-503)
-    def configure_poll_sensors(self, sensors: list[Sensor]) -> None:
+    def configure_poll_sensors(self, sensors_to_poll: list[SensorEnum]) -> None:
         """Configure the subset of sensors to poll.
 
         :param sensors: List of sensors to poll.
         """
-        self._poller.update_request_list(sensors)
+        sensor_names = [sensor.value for sensor in sensors_to_poll]
+        self._poller.update_request_list(
+            [sensor for sensor in self._sensors if sensor.name in sensor_names]
+        )
 
     def subscribe_data(self, callback: Callable) -> int:
         """Subscribe to data updates.

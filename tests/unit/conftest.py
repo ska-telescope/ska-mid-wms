@@ -14,6 +14,7 @@ from typing import AsyncGenerator, Dict, Generator
 
 import pytest
 from pymodbus.client import AsyncModbusTcpClient
+from pytest import FixtureRequest
 
 from ska_mid_wms.simulator import (
     WMSSimSensor,
@@ -108,7 +109,8 @@ async def wms_client_fixture(
 
 @pytest.fixture(name="weather_station")
 async def wms_interface_fixture(
-    wms_simulator_server: WMSSimulatorServer, logger: Logger
+    wms_simulator_server: WMSSimulatorServer,
+    logger: Logger,
 ) -> AsyncGenerator[WeatherStation, None]:
     """Fixture that creates a WeatherStation and connects it to a running simulation.
 
@@ -119,3 +121,37 @@ async def wms_interface_fixture(
     await weather_station.connect()
     yield weather_station
     weather_station.disconnect()
+
+
+# Expected callback data (in polling order)
+expected_callback_data: Dict[str, Dict[str, str]] = {
+    "wind_speed": {"name": "wind_speed", "units": "m/s"},
+    "wind_direction": {"name": "wind_direction", "units": "degrees"},
+    "temperature": {"name": "temperature", "units": "Deg C"},
+    "pressure": {"name": "pressure", "units": "mbar"},
+    "humidity": {"name": "humidity", "units": "%"},
+    "rainfall": {"name": "rainfall", "units": "mm"},
+}
+
+
+@pytest.fixture(name="expected_callback_data_full")
+def expected_callback_data_full_fixture() -> list[Dict]:
+    """Fixture that returns a list of all the expected callback dictionaries.
+
+    :return: List of expected callback dictionary data.
+    """
+    return list(expected_callback_data.values())
+
+
+@pytest.fixture(name="expected_callback_data")
+def expected_callback_data_fixture(
+    request: FixtureRequest,
+) -> list[Dict]:
+    """Fixture that returns the expected data for the given sensor subset.
+
+    :param request: The FixtureRequest for this test (a list of SensorEnums).
+    :return: List of expected callback dictionary data.
+    """
+    sensors = request.node.funcargs["sensor_list"]
+
+    return [expected_callback_data[sensor.value] for sensor in sensors]
