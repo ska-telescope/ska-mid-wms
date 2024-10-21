@@ -182,17 +182,14 @@ class WMSPoller:
 
         :param data: dictionary mapping sensors to raw values
         """
+        converted_data: Dict[str, Dict[str, Any]] = {}
         for datapoint in data:
-            converted_value = datapoint.sensor.convert_raw_adc(datapoint.raw_value)
-            await self.data_queue.put(
-                {
-                    datapoint.sensor.name: {
-                        "value": converted_value,
-                        "units": datapoint.sensor.unit,
-                        "timestamp": datapoint.timestamp,
-                    }
-                }
-            )
+            converted_data[datapoint.sensor.name] = {
+                "value": datapoint.sensor.convert_raw_adc(datapoint.raw_value),
+                "units": datapoint.sensor.unit,
+                "timestamp": datapoint.timestamp,
+            }
+        await self.data_queue.put(converted_data)
 
 
 class WMSPublisher:

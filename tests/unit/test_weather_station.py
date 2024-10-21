@@ -37,7 +37,7 @@ class TestWeatherStation:
         await asyncio.sleep(
             weather_station.poll_interval + weather_station.poll_interval / 2
         )
-        assert callback.call_count == len(expected_callback_data_full)
+        assert callback.call_count == 1  # 1 Modbus read for all contiguous registers
 
         for call, expected_results in zip(
             callback.call_args_list,
@@ -100,23 +100,33 @@ class TestWeatherStation:
 
     @pytest.mark.asyncio()
     @pytest.mark.parametrize(
-        "sensor_list",
+        "sensor_list,number_modbus_reads",
         [
-            [SensorEnum.TEMPERATURE, SensorEnum.RAINFALL],
-            [SensorEnum.WIND_DIRECTION, SensorEnum.PRESSURE, SensorEnum.HUMIDITY],
-            [SensorEnum.WIND_SPEED],
+            ([SensorEnum.TEMPERATURE, SensorEnum.RAINFALL], 2),
+            (
+                [
+                    SensorEnum.WIND_SPEED,
+                    SensorEnum.TEMPERATURE,
+                    SensorEnum.HUMIDITY,
+                    SensorEnum.RAINFALL,
+                ],
+                3,
+            ),
+            ([SensorEnum.WIND_DIRECTION], 1),
         ],
     )
     async def test_configure_sensors(
         self,
         weather_station: WeatherStation,
         sensor_list: list[SensorEnum],
+        number_modbus_reads: int,
         expected_callback_data: list[Dict[str, str]],
     ) -> None:
         """Test we can configure a subset of sensors to poll.
 
         :param weather_station: A WeatherStation connected to a running simulation.
         :param sensor_list: A list of non-contiguous Sensors to poll.
+        :param number of modbus reads: The number of modbus reads required.
         :param expected_callback_data: The expected callback data.
         """
         callback = MagicMock()
@@ -126,7 +136,7 @@ class TestWeatherStation:
         await asyncio.sleep(
             weather_station.poll_interval + weather_station.poll_interval / 2
         )
-        assert callback.call_count == len(sensor_list)
+        assert callback.call_count == number_modbus_reads
 
         for call, expected_results in zip(
             callback.call_args_list,
