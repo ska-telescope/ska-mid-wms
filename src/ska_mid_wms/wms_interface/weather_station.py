@@ -89,7 +89,7 @@ class WMSPoller:
         """Initialise the instance."""
         self._client = client
         self._logger = logger
-        self._stop_polling_request: bool = False
+        self._stop_polling_request: bool = True  # Don't start polling immediately
         self._poll_task: Task = asyncio.create_task(self._poll())
         self._read_requests: list[
             list[Sensor]
@@ -100,35 +100,34 @@ class WMSPoller:
     async def _poll(self) -> None:
         """Poll the hardware periodically for new data."""
         while True:
-            if not self._stop_polling_request:
-                # Each request is a list of Sensors with contiguous addresses
-                for request in self._read_requests:
-                    start_address = request[0].modbus_address
-                    read_count = len(request)
-                    try:
-                        result = await self._client.read_input_registers(
-                            start_address, read_count
-                        )
-                    except ModbusException as e:
-                        self._logger.error(f"{e}")
-                        continue
-
-                    if result.isError():
-                        self._logger.error(f"Received Modbus error: {result}")
-                        continue
-
-                    self._logger.debug(
-                        f"Read {read_count} registers from address "
-                        f"{start_address}: {result.registers}"
+            # Each request is a list of Sensors with contiguous addresses
+            for request in self._read_requests:
+                if self._stop_polling_request:
+                    break
+                start_address = request[0].modbus_address
+                read_count = len(request)
+                try:
+                    result = await self._client.read_input_registers(
+                        start_address, read_count
                     )
-                    new_data: list[WMSDatapoint] = []
-                    for index, value in enumerate(result.registers):
-                        new_data.append(
-                            WMSDatapoint(
-                                request[index], value, datetime.now(timezone.utc)
-                            )
-                        )
-                    await self._push_data(new_data)
+                except ModbusException as e:
+                    self._logger.error(f"{e}")
+                    continue
+
+                if result.isError():
+                    self._logger.error(f"Received Modbus error: {result}")
+                    continue
+
+                self._logger.debug(
+                    f"Read {read_count} registers from address "
+                    f"{start_address}: {result.registers}"
+                )
+                new_data: list[WMSDatapoint] = []
+                for index, value in enumerate(result.registers):
+                    new_data.append(
+                        WMSDatapoint(request[index], value, datetime.now(timezone.utc))
+                    )
+                await self._push_data(new_data)
             await asyncio.sleep(self.poll_interval)
 
     def update_request_list(self, sensors: list[Sensor]) -> None:
@@ -146,7 +145,7 @@ class WMSPoller:
         sorted_sensors: list[Sensor] = sorted(sensors)
         current_request: list[Sensor] = [sorted_sensors[0]]
 
-        for i, sensor in enumerate(sorted_sensors, start=1):
+        for i, sensor in enumerate(sorted_sensors[1:], start=1):
             if sensor.modbus_address == sorted_sensors[i - 1].modbus_address + 1:
                 current_request.append(sensor)
             else:
@@ -331,6 +330,7 @@ class WeatherStation:
 
     def disconnect(self) -> None:
         """Disconnect from the device."""
+        self.stop_polling()
         self._client.close()
 
     async def start_polling(self) -> None:
