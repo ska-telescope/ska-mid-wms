@@ -280,8 +280,6 @@ class WeatherStation:
 
     @poll_interval.setter
     def poll_interval(self, new_value: float) -> None:
-        if self._polling:
-            raise ValueError("Cannot set poll interval during polling.")
         self._poller.poll_interval = new_value
 
     def _create_sensors(self) -> None:
