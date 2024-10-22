@@ -40,6 +40,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinx_autodoc_typehints",
     "sphinxcontrib.plantuml",
+    "enum_tools.autoenum",
 ]
 plantuml_syntax_error_image = True
 
