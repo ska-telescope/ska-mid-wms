@@ -10,7 +10,7 @@ import time
 from typing import List
 
 import pytest
-from pymodbus.client import AsyncModbusTcpClient
+from pymodbus.client import AsyncModbusTcpClient, ModbusTcpClient
 from pymodbus.pdu import ModbusExceptions
 from pymodbus.pdu.mei_message import ReadDeviceInformationResponse
 from pymodbus.pdu.pdu import ExceptionResponse
@@ -146,6 +146,19 @@ class TestWMSSimulator:
         """
         assert wms_client.connected
         deviceinfo = await wms_client.read_device_information()
+        assert isinstance(deviceinfo, ReadDeviceInformationResponse)
+        assert deviceinfo.information[0].decode("ASCII") == "ACROMAG"
+        assert deviceinfo.information[1].decode("ASCII") == "961EN-4006"
+
+    def test_read_device_info_sync_version(
+        self, wms_sync_client: ModbusTcpClient
+    ) -> None:
+        """Test we can read the device info.
+
+        :param wms_sync_client: a Modbus TCP client connected to the simulation server.
+        """
+        assert wms_sync_client.connected
+        deviceinfo = wms_sync_client.read_device_information()
         assert isinstance(deviceinfo, ReadDeviceInformationResponse)
         assert deviceinfo.information[0].decode("ASCII") == "ACROMAG"
         assert deviceinfo.information[1].decode("ASCII") == "961EN-4006"

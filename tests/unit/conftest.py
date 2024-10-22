@@ -13,7 +13,7 @@ from logging import Logger
 from typing import AsyncGenerator, Dict, Generator
 
 import pytest
-from pymodbus.client import AsyncModbusTcpClient
+from pymodbus.client import AsyncModbusTcpClient, ModbusTcpClient
 from pytest import FixtureRequest
 
 from ska_mid_wms.simulator import (
@@ -103,6 +103,21 @@ async def wms_client_fixture(
     assert wms_simulator_server is not None
     client = AsyncModbusTcpClient("localhost", port=502, timeout=5)
     await client.connect()
+    yield client
+    client.close()
+
+
+@pytest.fixture(name="wms_sync_client")
+def wms_sync_client_fixture(
+    wms_simulator_server: WMSSimulatorServer,
+) -> Generator[ModbusTcpClient, None, None]:
+    """Fixture that creates a TCP client and connects to the Modbus server.
+
+    :param wms_simulator: a running WMS Simulator Server
+    """
+    assert wms_simulator_server is not None
+    client = ModbusTcpClient("localhost", port=502, timeout=5)
+    client.connect()
     yield client
     client.close()
 
