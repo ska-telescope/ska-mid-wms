@@ -43,6 +43,7 @@ Sphinx = "^7.4.0"
 sphinx-autodoc-typehints = "^2.3.0"
 ska-ser-sphinx-theme = "^0.2.0"
 sphinxcontrib-plantuml = "^0.30"
+enum-tools = { extras = ["sphinx"], version = "^0.12.0" }
 
 [tool.mypy]
 disallow_incomplete_defs = true
