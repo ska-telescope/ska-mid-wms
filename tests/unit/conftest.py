@@ -7,13 +7,15 @@
 # See LICENSE for more info.
 """This module provides test fixtures for the Weather Monitoring System."""
 
+import asyncio
 import importlib
 import logging
+import threading
 from logging import Logger
 from typing import AsyncGenerator, Dict, Generator
 
 import pytest
-from pymodbus.client import AsyncModbusTcpClient, ModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 from pytest import FixtureRequest
 
 from ska_mid_wms.simulator import (
@@ -75,47 +77,65 @@ def logger_fixture() -> logging.Logger:
     return debug_logger
 
 
+# Start the server in a separate thread before running the tests
+# otherwise we can't use a synchronous client to connect to it
+# because the event loop gets closed
 @pytest.fixture(name="wms_simulator_server")
-async def wms_simulator_server_fixture(
+def wms_simulator_server_fixture(
     simulator_config: Dict[str, str],
     simulator: WMSSimulator,
-) -> AsyncGenerator[WMSSimulatorServer, None]:
-    """Fixture that starts a WMS simulator server."""
+) -> Generator[None, None, None]:
+    """Start the Modbus server in a separate Thread."""
+
+    def run_event_loop(
+        event_loop: asyncio.AbstractEventLoop,
+        thread_started_event: threading.Event,
+    ) -> None:
+        asyncio.set_event_loop(event_loop)
+        thread_started_event.set()  # Signal that the event loop thread has started
+        event_loop.run_forever()
+
+    async def start_server(simulator_config: Dict[str, str]) -> WMSSimulatorServer:
+        server = WMSSimulatorServer(
+            config_path=simulator_config["config_path"],
+            server_name=simulator_config["server_name"],
+            device_name=simulator_config["device_name"],
+        )
+        await server.start(True)
+        return server
+
+    async def stop_server(server: WMSSimulatorServer) -> None:
+        await server.stop()
+
     assert simulator is not None
-    server = WMSSimulatorServer(
-        config_path=simulator_config["config_path"],
-        server_name=simulator_config["server_name"],
-        device_name=simulator_config["device_name"],
+    event_loop = asyncio.new_event_loop()
+    thread_started_event = threading.Event()
+    event_loop_thread = threading.Thread(
+        target=run_event_loop,
+        args=(event_loop, thread_started_event),
+        name="asyncio event loop for Modbus server",
+        daemon=True,
     )
-    await server.start(True)
-    yield server
-    await server.stop()
+    event_loop_thread.start()
+    thread_started_event.wait(5.0)  # Wait for the event loop thread to start
+
+    server = asyncio.run_coroutine_threadsafe(
+        start_server(simulator_config), event_loop
+    ).result()
+
+    yield
+
+    _ = asyncio.run_coroutine_threadsafe(stop_server(server), event_loop).result()
 
 
 @pytest.fixture(name="wms_client")
-async def wms_client_fixture(
-    wms_simulator_server: WMSSimulatorServer,
-) -> AsyncGenerator[AsyncModbusTcpClient, None]:
-    """Fixture that creates a TCP client and connects to the Modbus server.
-
-    :param wms_simulator: a running WMS Simulator Server
-    """
-    assert wms_simulator_server is not None
-    client = AsyncModbusTcpClient("localhost", port=502, timeout=5)
-    await client.connect()
-    yield client
-    client.close()
-
-
-@pytest.fixture(name="wms_sync_client")
-def wms_sync_client_fixture(
-    wms_simulator_server: WMSSimulatorServer,
+def wms_client_fixture(
+    wms_simulator_server: WMSSimulatorServer,  # pylint: disable=unused-argument
 ) -> Generator[ModbusTcpClient, None, None]:
     """Fixture that creates a TCP client and connects to the Modbus server.
 
     :param wms_simulator: a running WMS Simulator Server
     """
-    assert wms_simulator_server is not None
     client = ModbusTcpClient("localhost", port=502, timeout=5)
     client.connect()
     yield client
@@ -124,14 +144,13 @@ def wms_sync_client_fixture(
 
 @pytest.fixture(name="weather_station")
 async def wms_interface_fixture(
-    wms_simulator_server: WMSSimulatorServer,
+    wms_simulator_server: WMSSimulatorServer,  # pylint: disable=unused-argument
     logger: Logger,
 ) -> AsyncGenerator[WeatherStation, None]:
     """Fixture that creates a WeatherStation and connects it to a running simulation.
 
     :param wms_simulator_server: a running WMS Simulator Server
     """
-    assert wms_simulator_server is not None
     weather_station = await WeatherStation.create_weather_station("", logger)
     await weather_station.connect()
     yield weather_station
