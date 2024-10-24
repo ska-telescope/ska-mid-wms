@@ -33,8 +33,8 @@ Here is a brief example demonstrating how to use the WMS Python interface:
     from ska_mid_wms.wms_interface import WeatherStation, SensorEnum
 
     logger = logging.getLogger()
-    weather_station = await WeatherStation.create_weather_station("config_file.json", logger)
-    await weather_station.connect()
+    weather_station = WeatherStation("config_file.json", logger)
+    weather_station.connect()
 
     # Set the polling interval (defaults to 1 second)
     weather_station.polling_interval = 2
@@ -44,7 +44,7 @@ Here is a brief example demonstrating how to use the WMS Python interface:
     wms.configure_poll_sensors(sensors)
 
     # Start polling
-    await weather_station.start_polling()
+    weather_station.start_polling()
 
     # Subscribe to data updates
     def callback(result):

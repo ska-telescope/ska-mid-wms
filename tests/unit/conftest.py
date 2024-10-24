@@ -12,7 +12,7 @@ import importlib
 import logging
 import threading
 from logging import Logger
-from typing import AsyncGenerator, Dict, Generator
+from typing import Dict, Generator
 
 import pytest
 from pymodbus.client import ModbusTcpClient
@@ -143,16 +143,16 @@ def wms_client_fixture(
 
 
 @pytest.fixture(name="weather_station")
-async def wms_interface_fixture(
+def wms_interface_fixture(
     wms_simulator_server: WMSSimulatorServer,  # pylint: disable=unused-argument
     logger: Logger,
-) -> AsyncGenerator[WeatherStation, None]:
+) -> Generator[WeatherStation, None, None]:
     """Fixture that creates a WeatherStation and connects it to a running simulation.
 
     :param wms_simulator_server: a running WMS Simulator Server
     """
-    weather_station = await WeatherStation.create_weather_station("", logger)
-    await weather_station.connect()
+    weather_station = WeatherStation("", logger)
+    weather_station.connect()
     yield weather_station
     weather_station.disconnect()
 

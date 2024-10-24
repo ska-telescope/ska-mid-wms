@@ -9,17 +9,17 @@
 
 from __future__ import annotations
 
-import asyncio
 import functools
 import logging
-from asyncio import Task
-from asyncio.queues import Queue
+import queue
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
+from threading import Event, Thread
 from typing import Any, Callable, Dict, Final
 
-from pymodbus.client import AsyncModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 from pymodbus.exceptions import ModbusException
 
 ADC_FULL_SCALE: Final = 2**16 - 1  # Max value produced by the ADC in raw counts
@@ -94,7 +94,7 @@ class WMSPoller:
 
     def __init__(
         self,
-        client: AsyncModbusTcpClient,
+        client: ModbusTcpClient,
         logger: logging.Logger,
         sensors: list[Sensor],
         poll_interval: float = 1,
@@ -102,47 +102,51 @@ class WMSPoller:
         """Initialise the instance."""
         self._client = client
         self._logger = logger
-        self._stop_polling_request: bool = True  # Don't start polling immediately
-        self._poll_task: Task = asyncio.create_task(self._poll())
+        self._stop_event: Event = Event()
+        self._stop_event.set()  # Don't start polling immediately
+        self._poll_thread: Thread = Thread(
+            target=self._poll, args=(self._stop_event,), daemon=True
+        )
         self._read_requests: list[
             list[Sensor]
         ]  # Each Modbus request is a list of sensors with contiguous registers
-        self.data_queue: Queue = Queue()
+        self.data_queue: queue.Queue = queue.Queue()
         self.poll_interval = poll_interval
         self.update_request_list(sensors)
 
-    async def _poll(self) -> None:
+    def _poll(self, stop_event: Event) -> None:
         """Poll the hardware periodically for new data."""
         while True:
-            # Each request is a list of Sensors with contiguous addresses
-            for request in self._read_requests:
-                if self._stop_polling_request:
-                    break
-                start_address = request[0].modbus_address
-                read_count = len(request)
-                try:
-                    result = await self._client.read_input_registers(
-                        start_address, read_count
-                    )
-                except ModbusException as e:
-                    self._logger.error(f"{e}")
-                    continue
+            if not stop_event.is_set():
+                # Each request is a list of Sensors with contiguous addresses
+                for request in self._read_requests:
+                    start_address = request[0].modbus_address
+                    read_count = len(request)
+                    try:
+                        result = self._client.read_input_registers(
+                            start_address, read_count
+                        )
+                    except ModbusException as e:
+                        self._logger.error(f"{e}")
+                        continue
 
-                if result.isError():
-                    self._logger.error(f"Received Modbus error: {result}")
-                    continue
+                    if result.isError():
+                        self._logger.error(f"Received Modbus error: {result}")
+                        continue
 
-                self._logger.debug(
-                    f"Read {read_count} registers from address "
-                    f"{start_address}: {result.registers}"
-                )
-                new_data: list[WMSDatapoint] = []
-                for index, value in enumerate(result.registers):
-                    new_data.append(
-                        WMSDatapoint(request[index], value, datetime.now(timezone.utc))
+                    self._logger.debug(
+                        f"Read {read_count} registers from address "
+                        f"{start_address}: {result.registers}"
                     )
-                await self._push_data(new_data)
-            await asyncio.sleep(self.poll_interval)
+                    new_data: list[WMSDatapoint] = []
+                    for index, value in enumerate(result.registers):
+                        new_data.append(
+                            WMSDatapoint(
+                                request[index], value, datetime.now(timezone.utc)
+                            )
+                        )
+                    self._push_data(new_data)
+            time.sleep(self.poll_interval)
 
     def update_request_list(self, sensors: list[Sensor]) -> None:
         """Update the Modbus request list.
@@ -171,13 +175,15 @@ class WMSPoller:
 
     def start(self) -> None:
         """Start polling the weather station data."""
-        self._stop_polling_request = False
+        self._stop_event.clear()
+        if not self._poll_thread.is_alive():
+            self._poll_thread.start()
 
     def stop(self) -> None:
         """Stop polling the weather station data."""
-        self._stop_polling_request = True
+        self._stop_event.set()
 
-    async def _push_data(self, data: list[WMSDatapoint]) -> None:
+    def _push_data(self, data: list[WMSDatapoint]) -> None:
         """Push new data to a queue for the publish task to consume.
 
         :param data: dictionary mapping sensors to raw values
@@ -189,13 +195,13 @@ class WMSPoller:
                 "units": datapoint.sensor.unit,
                 "timestamp": datapoint.timestamp,
             }
-        await self.data_queue.put(converted_data)
+        self.data_queue.put(converted_data)
 
 
 class WMSPublisher:
     """Class to implement publishing the new data to subscribed clients."""
 
-    def __init__(self, publish_queue: Queue, logger: logging.Logger) -> None:
+    def __init__(self, publish_queue: queue.Queue, logger: logging.Logger) -> None:
         """Initialise the instance.
 
         :param data_queue: The queue to retrieve new data from.
@@ -204,11 +210,18 @@ class WMSPublisher:
         self._logger = logger
         self._subscriptions: Dict[int, Callable] = {}
         self._subscription_counter: int = 0
-        self._publish_task: Task = asyncio.create_task(self._publish())
+        # self._stop_event: Event = Event()
+        self._publish_thread: Thread = Thread(target=self._publish, daemon=True)
+        self._publish_thread.start()
 
-    async def _publish(self):
+    def _publish(self) -> None:
+        # while not stop_event.is_set():
         while True:
-            next_item = await self._publish_queue.get()
+            try:
+                # Check the stop event every 5 seconds so we can shutdown cleanly
+                next_item = self._publish_queue.get(block=True, timeout=5)
+            except queue.Empty:
+                continue
             for _, callback in self._subscriptions.items():
                 callback(next_item)
             self._publish_queue.task_done()
@@ -234,19 +247,6 @@ class WMSPublisher:
 class WeatherStation:
     """Class to implement the Modbus interface to a Weather Station."""
 
-    @classmethod
-    async def create_weather_station(
-        cls, config_file: str, logger: logging.Logger
-    ) -> WeatherStation:
-        """Create and return a WeatherStation.
-
-        :param config_file: Path to a configuration yaml file.
-        :param logger: A logging object.
-        """
-        weather_station = WeatherStation(config_file, logger)
-        await weather_station._init()
-        return weather_station
-
     def __init__(self, config_file: str, logger: logging.Logger) -> None:
         """Initialise the instance.
 
@@ -261,14 +261,17 @@ class WeatherStation:
         self._logger = logger
         self._polling: bool = False
 
-        self._client: AsyncModbusTcpClient
-        self._poller: WMSPoller
-        self._publisher: WMSPublisher
+        hostname = "localhost"
+        port = 502
 
-    async def _init(self):
-        self._client = AsyncModbusTcpClient("localhost", port=502)
-        await self.connect()
-        self._logger.info("Connected Modbus TCP client to address localhost, port 502")
+        self._client = ModbusTcpClient(hostname, port=port)
+        self.connect()
+        if self._client.connected:
+            self._logger.info(
+                f"Connected Modbus TCP client to address {hostname}, port {port}"
+            )
+        else:
+            self._logger.error(f"Couldn't connect to address {hostname}, port {port}")
 
         self._poller = WMSPoller(self._client, self._logger, self._sensors)
         self._publisher = WMSPublisher(self._poller.data_queue, self._logger)
@@ -334,19 +337,18 @@ class WeatherStation:
     #     """
     #     # TODO - WOM-504
 
-    async def connect(self) -> None:
+    def connect(self) -> None:
         """Connect to the device."""
-        await self._client.connect()
+        self._client.connect()
 
     def disconnect(self) -> None:
         """Disconnect from the device."""
-        self.stop_polling()
         self._client.close()
 
-    async def start_polling(self) -> None:
-        """Start polling the weather station data."""
+    def start_polling(self) -> None:
+        """Start (or restart) polling the weather station data."""
         if not self._client.connected:
-            await self.connect()
+            self.connect()
         self._polling = True
         self._poller.start()
 

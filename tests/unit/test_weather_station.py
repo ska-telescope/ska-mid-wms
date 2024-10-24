@@ -7,23 +7,24 @@
 # See LICENSE for more info.
 """This module provides unit tests for the WeatherStation class."""
 
-import asyncio
+import time
 from datetime import datetime
 from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
 
+from ska_mid_wms.simulator import WMSSimulator
 from ska_mid_wms.wms_interface import SensorEnum, WeatherStation
 
 
 class TestWeatherStation:
     """Test the interface to the WeatherStation."""
 
-    @pytest.mark.asyncio()
-    async def test_subscribe_data(
+    def test_subscribe_data(
         self,
         weather_station: WeatherStation,
+        simulator: WMSSimulator,
         expected_callback_data_full: list[Dict[str, str]],
     ) -> None:
         """Test we can subscribe to data updates.
@@ -32,11 +33,11 @@ class TestWeatherStation:
         :param expected_callback_data_full: The full set of expected callback data.
         """
         callback = MagicMock()
+        # Let's generate some changing data for this test
+        simulator.start_sim_threads()
         weather_station.subscribe_data(callback)
-        await weather_station.start_polling()
-        await asyncio.sleep(
-            weather_station.poll_interval + weather_station.poll_interval / 2
-        )
+        weather_station.start_polling()
+        time.sleep(weather_station.poll_interval)
         assert callback.call_count == 1  # 1 Modbus read for all contiguous registers
 
         for call, expected_results in zip(
@@ -50,8 +51,7 @@ class TestWeatherStation:
             assert isinstance(value_dict["value"], float)
             assert value_dict["units"] == expected_results["units"]
 
-    @pytest.mark.asyncio()
-    async def test_unsubscribe_data(
+    def test_unsubscribe_data(
         self,
         weather_station: WeatherStation,
     ) -> None:
@@ -61,17 +61,16 @@ class TestWeatherStation:
         """
         callback = MagicMock()
         subscription_id = weather_station.subscribe_data(callback)
-        await weather_station.start_polling()
-        await asyncio.sleep(weather_station.poll_interval * 2)
+        weather_station.start_polling()
+        time.sleep(weather_station.poll_interval * 2)
         weather_station.unsubscribe_data(subscription_id)
         callback.assert_called()
         call_count = callback.call_count
-        await asyncio.sleep(weather_station.poll_interval * 10)
+        time.sleep(weather_station.poll_interval * 10)
         # Check we have not received any more callbacks
         assert callback.call_count == call_count
 
-    @pytest.mark.asyncio()
-    async def test_start_stop_polling(
+    def test_start_stop_polling(
         self,
         weather_station: WeatherStation,
     ) -> None:
@@ -81,24 +80,19 @@ class TestWeatherStation:
         """
         callback = MagicMock()
         weather_station.subscribe_data(callback)
-        await weather_station.start_polling()
-        await asyncio.sleep(
-            weather_station.poll_interval + weather_station.poll_interval / 2
-        )
+        weather_station.start_polling()
+        time.sleep(weather_station.poll_interval + weather_station.poll_interval / 2)
         weather_station.stop_polling()
         callback.assert_called()
         call_count = callback.call_count
-        await asyncio.sleep(weather_station.poll_interval * 10)
+        time.sleep(weather_station.poll_interval * 10)
         # Check we have not received any more callbacks
         assert callback.call_count == call_count
 
-        await weather_station.start_polling()
-        await asyncio.sleep(
-            weather_station.poll_interval + weather_station.poll_interval / 2
-        )
+        weather_station.start_polling()
+        time.sleep(weather_station.poll_interval + weather_station.poll_interval / 2)
         assert callback.call_count > call_count
 
-    @pytest.mark.asyncio()
     @pytest.mark.parametrize(
         "sensor_list,number_modbus_reads",
         [
@@ -115,7 +109,7 @@ class TestWeatherStation:
             ([SensorEnum.WIND_DIRECTION], 1),
         ],
     )
-    async def test_configure_sensors(
+    def test_configure_sensors(
         self,
         weather_station: WeatherStation,
         sensor_list: list[SensorEnum],
@@ -132,10 +126,8 @@ class TestWeatherStation:
         callback = MagicMock()
         weather_station.subscribe_data(callback)
         weather_station.configure_poll_sensors(sensor_list)
-        await weather_station.start_polling()
-        await asyncio.sleep(
-            weather_station.poll_interval + weather_station.poll_interval / 2
-        )
+        weather_station.start_polling()
+        time.sleep(weather_station.poll_interval)
         assert callback.call_count == number_modbus_reads
 
         for call, expected_results in zip(
