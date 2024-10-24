@@ -42,9 +42,8 @@ class WMSSimSensor:
         signal = sine_wave + noise
         while True:
             for datapoint in signal:
-                if not self._generate:
-                    return  # Exit here: request to stop generating has been made
-                self.raw_value = math.floor(datapoint)
+                if self._generate:
+                    self.raw_value = math.floor(datapoint)
                 time.sleep(1 / update_frequency)
 
     def __init__(
@@ -65,9 +64,12 @@ class WMSSimSensor:
         self._range = max_value - min_value
         self._raw_value = init_value
         self._engineering_value = self.convert_raw_to_egu(init_value)
+        self._update_frequency = update_frequency
 
         self._generate: bool = False
-        self._sim_thread = Thread(target=self.generate_data, args=[update_frequency])
+        self._sim_thread: Thread = Thread(
+            target=self.generate_data, args=[self._update_frequency], daemon=True
+        )
 
     def start_generating_data(self) -> None:
         """Start generating data."""
