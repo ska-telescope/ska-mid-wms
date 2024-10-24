@@ -11,6 +11,7 @@ import asyncio
 import importlib
 import logging
 import threading
+import time
 from logging import Logger
 from typing import Dict, Generator
 
@@ -189,3 +190,33 @@ def expected_callback_data_fixture(
     sensors = request.node.funcargs["sensor_list"]
 
     return [expected_callback_data[sensor.value] for sensor in sensors]
+
+
+class Helpers:  # pylint: disable=too-few-public-methods
+    """Test helper functions."""
+
+    @staticmethod
+    def assert_expected_logs(
+        caplog: pytest.LogCaptureFixture,
+        expected_logs: list[str],
+        timeout: int = 2,
+    ) -> None:
+        """
+        Assert the expected log messages are in the captured logs.
+
+        The expected list of log messages must appear in the records in the same order.
+        The captured logs are cleared before returning for subsequent assertions.
+
+        :param caplog: pytest log capture fixture.
+        :param expected_logs: to assert are in the log capture fixture.
+        :param timeout: time to wait for the last log message to appear, default 2 secs.
+        """
+        start_time = time.time()
+        while time.time() - start_time < timeout:
+            if expected_logs[-1] in caplog.text:
+                break
+        else:
+            pytest.fail(f"'{expected_logs}' not found in logs within {timeout} seconds")
+        test_logs = [record.message for record in caplog.records]
+        assert test_logs == expected_logs
+        caplog.clear()

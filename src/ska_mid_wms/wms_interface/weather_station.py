@@ -53,6 +53,10 @@ class Sensor:
     def __lt__(self, other: Sensor) -> bool:
         """Check if less than another Sensor object.
 
+        This comparison function is used to determine whether sensors
+        have contiguous registers and therefore how many Modbus reads
+        are required for a given set.
+
         :param other: other Sensor object to compare with
         :return: True if this Sensor's modbus address is less than the other's.
         """
@@ -210,18 +214,12 @@ class WMSPublisher:
         self._logger = logger
         self._subscriptions: Dict[int, Callable] = {}
         self._subscription_counter: int = 0
-        # self._stop_event: Event = Event()
         self._publish_thread: Thread = Thread(target=self._publish, daemon=True)
         self._publish_thread.start()
 
     def _publish(self) -> None:
-        # while not stop_event.is_set():
         while True:
-            try:
-                # Check the stop event every 5 seconds so we can shutdown cleanly
-                next_item = self._publish_queue.get(block=True, timeout=5)
-            except queue.Empty:
-                continue
+            next_item = self._publish_queue.get()
             for _, callback in self._subscriptions.items():
                 callback(next_item)
             self._publish_queue.task_done()
@@ -302,6 +300,13 @@ class WeatherStation:
 
         :param sensors: List of sensors to poll.
         """
+        for sensor in sensors_to_poll:
+            if not isinstance(sensor, SensorEnum):
+                self._logger.error(
+                    f"Could not configure sensors: '{sensor}' is not a valid sensor."
+                )
+                return
+
         sensor_names = [sensor.value for sensor in sensors_to_poll]
         self._poller.update_request_list(
             [sensor for sensor in self._sensors if sensor.name in sensor_names]

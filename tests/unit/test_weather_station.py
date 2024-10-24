@@ -13,6 +13,7 @@ from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
+from conftest import Helpers
 
 from ska_mid_wms.simulator import WMSSimulator
 from ska_mid_wms.wms_interface import SensorEnum, WeatherStation
@@ -29,7 +30,8 @@ class TestWeatherStation:
     ) -> None:
         """Test we can subscribe to data updates.
 
-        :param weather_station: A WeatherStation connected to a running simulation.
+        :param weather_station: A WeatherStation connected to the Modbus server.
+        :param simulator: A running simulator.
         :param expected_callback_data_full: The full set of expected callback data.
         """
         callback = MagicMock()
@@ -81,7 +83,7 @@ class TestWeatherStation:
         callback = MagicMock()
         weather_station.subscribe_data(callback)
         weather_station.start_polling()
-        time.sleep(weather_station.poll_interval + weather_station.poll_interval / 2)
+        time.sleep(weather_station.poll_interval)
         weather_station.stop_polling()
         callback.assert_called()
         call_count = callback.call_count
@@ -90,13 +92,16 @@ class TestWeatherStation:
         assert callback.call_count == call_count
 
         weather_station.start_polling()
-        time.sleep(weather_station.poll_interval + weather_station.poll_interval / 2)
+        time.sleep(weather_station.poll_interval)
         assert callback.call_count > call_count
 
     @pytest.mark.parametrize(
         "sensor_list,number_modbus_reads",
         [
-            ([SensorEnum.TEMPERATURE, SensorEnum.RAINFALL], 2),
+            (
+                [SensorEnum.TEMPERATURE, SensorEnum.RAINFALL],
+                2,
+            ),  # non-contiguous so two reads required
             (
                 [
                     SensorEnum.WIND_SPEED,
@@ -104,7 +109,7 @@ class TestWeatherStation:
                     SensorEnum.HUMIDITY,
                     SensorEnum.RAINFALL,
                 ],
-                3,
+                3,  # Humidity and rainfall can be read together so three reads in total
             ),
             ([SensorEnum.WIND_DIRECTION], 1),
         ],
@@ -119,7 +124,7 @@ class TestWeatherStation:
         """Test we can configure a subset of sensors to poll.
 
         :param weather_station: A WeatherStation connected to a running simulation.
-        :param sensor_list: A list of non-contiguous Sensors to poll.
+        :param sensor_list: A list of Sensors to poll.
         :param number of modbus reads: The number of modbus reads required.
         :param expected_callback_data: The expected callback data.
         """
@@ -140,3 +145,17 @@ class TestWeatherStation:
             assert isinstance(value_dict["timestamp"], datetime)
             assert isinstance(value_dict["value"], float)
             assert value_dict["units"] == expected_results["units"]
+
+    def test_configure_invalid_sensor(
+        self, weather_station: WeatherStation, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        """Test trying to configure an invalid sensor.
+
+        :param weather_station: A WeatherStation connected to a running simulation.
+        """
+        sensor_list = [SensorEnum.HUMIDITY, SensorEnum.RAINFALL, "Not a sensor"]
+        weather_station.configure_poll_sensors(sensor_list)
+        Helpers.assert_expected_logs(
+            caplog,
+            ["Could not configure sensors: 'Not a sensor' is not a valid sensor."],
+        )
