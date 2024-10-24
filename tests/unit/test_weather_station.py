@@ -13,10 +13,11 @@ from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
-from conftest import Helpers
 
 from ska_mid_wms.simulator import WMSSimulator
 from ska_mid_wms.wms_interface import SensorEnum, WeatherStation
+
+from .conftest import Helpers
 
 
 class TestWeatherStation:
@@ -154,7 +155,7 @@ class TestWeatherStation:
         :param weather_station: A WeatherStation connected to a running simulation.
         """
         sensor_list = [SensorEnum.HUMIDITY, SensorEnum.RAINFALL, "Not a sensor"]
-        weather_station.configure_poll_sensors(sensor_list)
+        weather_station.configure_poll_sensors(sensor_list)  # type: ignore
         Helpers.assert_expected_logs(
             caplog,
             ["Could not configure sensors: 'Not a sensor' is not a valid sensor."],
