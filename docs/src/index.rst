@@ -7,16 +7,24 @@ This project is developing the Weather Monitoring System for the SKA-Mid telesco
 .. automodule: ska_mid_wms
 
 .. toctree::
-   :maxdepth: 3
-   :caption: Reference
+   :maxdepth: 2
+   :caption: How-To Guides
 
-   developer-guide.rst
-   api/index
+   developer-guide
 
 .. toctree::
+   :maxdepth: 2
+   :caption: Reference
+
+   api/wms-interface
+   api/wms-simulator
+
+.. toctree::
+   :maxdepth: 1
    :caption: Releases
 
    releases/changelog
+
 
 Indices and tables
 ==================
