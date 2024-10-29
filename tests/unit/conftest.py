@@ -152,7 +152,9 @@ def wms_interface_fixture(
 
     :param wms_simulator_server: a running WMS Simulator Server
     """
-    weather_station = WeatherStation("", logger)
+    weather_station = WeatherStation(
+        "tests/data/weather_station.yaml", "localhost", 502, logger
+    )
     weather_station.connect()
     yield weather_station
     weather_station.disconnect()

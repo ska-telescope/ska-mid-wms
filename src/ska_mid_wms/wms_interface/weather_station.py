@@ -22,6 +22,8 @@ from typing import Any, Callable, Dict, Final
 from pymodbus.client import ModbusTcpClient
 from pymodbus.exceptions import ModbusException
 
+from .weather_station_configuration import WeatherStationDict, load_configuration
+
 ADC_FULL_SCALE: Final = 2**16 - 1  # Max value produced by the ADC in raw counts
 
 
@@ -93,14 +95,14 @@ class SensorEnum(Enum):
     RAINFALL = "rainfall"
 
 
-class WMSPoller:
+class WMSPoller:  # pylint: disable=too-many-instance-attributes
     """Class to implement polling the WMS hardware."""
 
     def __init__(
         self,
         client: ModbusTcpClient,
+        slave_id: int,
         logger: logging.Logger,
-        sensors: list[Sensor],
         poll_interval: float = 1,
     ) -> None:
         """Initialise the instance."""
@@ -114,9 +116,9 @@ class WMSPoller:
         self._read_requests: list[
             list[Sensor]
         ]  # Each Modbus request is a list of sensors with contiguous registers
+        self._slave_id = slave_id
         self.data_queue: queue.Queue = queue.Queue()
         self.poll_interval = poll_interval
-        self.update_request_list(sensors)
 
     def _poll(self, stop_event: Event) -> None:
         """Poll the hardware periodically for new data."""
@@ -128,7 +130,7 @@ class WMSPoller:
                     read_count = len(request)
                     try:
                         result = self._client.read_input_registers(
-                            start_address, read_count
+                            start_address, read_count, self._slave_id
                         )
                     except ModbusException as e:
                         self._logger.error(f"{e}")
@@ -245,22 +247,25 @@ class WMSPublisher:
 class WeatherStation:
     """Class to implement the Modbus interface to a Weather Station."""
 
-    def __init__(self, config_file: str, logger: logging.Logger) -> None:
+    def __init__(
+        self, config_file: str, hostname: str, port: int, logger: logging.Logger
+    ) -> None:
         """Initialise the instance.
 
         :param config_file: Path to a configuration yaml file.
+        :param hostname: Host name of the Modbus server.
+        :param port: Port number of the Modbus server.
         :param logger: A logging object.
+        :raises: ValueError if the configuration could not be loaded or is invalid.
         """
-        # TODO: Read the host and port from a configuration file (WOM-503)
-        logger.info(f"Reading configuration file {config_file}")
-
-        self._sensors: list[Sensor] = []
-        self._create_sensors()
+        logger.info(f"Reading configuration file {config_file}...")
+        try:
+            config: WeatherStationDict = load_configuration(config_file)
+        except OSError as e:
+            raise ValueError(f"Error opening configuration file {config_file}") from e
+        self._sensors: list[Sensor] = self._create_sensors(config)
         self._logger = logger
         self._polling: bool = False
-
-        hostname = "localhost"
-        port = 502
 
         self._client = ModbusTcpClient(hostname, port=port)
         self.connect()
@@ -271,7 +276,10 @@ class WeatherStation:
         else:
             self._logger.error(f"Couldn't connect to address {hostname}, port {port}")
 
-        self._poller = WMSPoller(self._client, self._logger, self._sensors)
+        self._poller = WMSPoller(
+            self._client, config["slave_id"], self._logger, config["poll_interval"]
+        )
+        self._poller.update_request_list(self._sensors)
         self._publisher = WMSPublisher(self._poller.data_queue, self._logger)
 
     @property
@@ -283,16 +291,18 @@ class WeatherStation:
     def poll_interval(self, new_value: float) -> None:
         self._poller.poll_interval = new_value
 
-    def _create_sensors(self) -> None:
-        """Create the Sensor objects from the configuration."""
-        # TODO: Read info from configuration file
-        self._sensors = [
-            Sensor(15, "wind_speed", "Wind speed", "m/s", 70, 0),
-            Sensor(16, "wind_direction", "Wind direction", "degrees", 360, 0),
-            Sensor(17, "temperature", "Temperature", "Deg C", 50, -10),
-            Sensor(18, "pressure", "Pressure", "mbar", 1100, 600),
-            Sensor(19, "humidity", "Humidity", "%", 100, 0),
-            Sensor(20, "rainfall", "Rainfall", "mm", 500, 0),
+    def _create_sensors(self, config: WeatherStationDict) -> list[Sensor]:
+        """Create the Sensor objects from the supplied configuration."""
+        return [
+            Sensor(
+                sensor_config["address"],
+                sensor_name,
+                sensor_config["description"],
+                sensor_config["units"],
+                sensor_config["scale_high"],
+                sensor_config["scale_low"],
+            )
+            for sensor_name, sensor_config in config["sensors"].items()
         ]
 
     def configure_poll_sensors(self, sensors_to_poll: list[SensorEnum]) -> None:

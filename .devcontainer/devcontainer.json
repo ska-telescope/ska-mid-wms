@@ -48,7 +48,9 @@
 				"ms-python.python",
 				"ryanluker.vscode-coverage-gutters",
 				"tamasfe.even-better-toml",
-				"trond-snekvik.simple-rst"
+				"trond-snekvik.simple-rst",
+				"ms-toolsai.jupyter",
+				"LittleFoxTeam.vscode-python-test-adapter"
 			]
 		}
 	},
