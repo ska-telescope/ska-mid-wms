@@ -10,7 +10,7 @@ import time
 from typing import List
 
 import pytest
-from pymodbus.client import AsyncModbusTcpClient
+from pymodbus.client import ModbusTcpClient
 from pymodbus.pdu import ModbusExceptions
 from pymodbus.pdu.mei_message import ReadDeviceInformationResponse
 from pymodbus.pdu.pdu import ExceptionResponse
@@ -138,22 +138,20 @@ class TestWMSSimulator:
         assert simulator.wind_speed == 26700
         assert simulator.wind_direction == 36125
 
-    @pytest.mark.asyncio(loop_scope="function")
-    async def test_read_device_info(self, wms_client: AsyncModbusTcpClient) -> None:
+    def test_read_device_info(self, wms_client: ModbusTcpClient) -> None:
         """Test we can read the device info.
 
         :param wms_client: a Modbus TCP client connected to the simulation server.
         """
         assert wms_client.connected
-        deviceinfo = await wms_client.read_device_information()
+        deviceinfo = wms_client.read_device_information()
         assert isinstance(deviceinfo, ReadDeviceInformationResponse)
         assert deviceinfo.information[0].decode("ASCII") == "ACROMAG"
         assert deviceinfo.information[1].decode("ASCII") == "961EN-4006"
 
-    @pytest.mark.asyncio(loop_scope="function")
-    async def test_read_uint16(
+    def test_read_uint16(
         self,
-        wms_client: AsyncModbusTcpClient,
+        wms_client: ModbusTcpClient,
     ) -> None:
         """Test we can read the six sensor registers.
 
@@ -171,14 +169,11 @@ class TestWMSSimulator:
         ]
 
         # Read 6 registers from address 15 on slave 1
-        response = await wms_client.read_input_registers(15, 6, 1)
+        response = wms_client.read_input_registers(15, 6, 1)
         assert isinstance(response, ReadInputRegistersResponse)
         assert response.registers == expected_results
 
-    @pytest.mark.asyncio(loop_scope="function")
-    async def test_read_invalid_register(
-        self, wms_client: AsyncModbusTcpClient
-    ) -> None:
+    def test_read_invalid_register(self, wms_client: ModbusTcpClient) -> None:
         """Test reading an invalid register.
 
         :param wms_client: a Modbus TCP client connected to the simulation server.
@@ -186,6 +181,6 @@ class TestWMSSimulator:
         assert wms_client.connected
 
         # Read 1 register at (invalid) address 14 on slave 1
-        response = await wms_client.read_input_registers(1, 14, 1)
+        response = wms_client.read_input_registers(1, 14, 1)
         assert isinstance(response, ExceptionResponse)
         assert response.exception_code == ModbusExceptions.IllegalAddress

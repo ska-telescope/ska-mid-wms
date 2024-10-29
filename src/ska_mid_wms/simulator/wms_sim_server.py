@@ -74,7 +74,7 @@ async def main(argv: list[str]) -> None:
     :param argv: command line arguments.
     """
     parser = argparse.ArgumentParser(
-        prog="WMS Simulation Server",
+        prog="wms_sim_server",
         description="Starts a Modbus server for the Weather "
         " Monitoring System simulation",
     )

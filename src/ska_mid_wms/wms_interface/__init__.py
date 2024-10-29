@@ -5,6 +5,8 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-"""This package implements the SKA-Mid Weather Monitoring System."""
+"""This subpackage implements the Modbus interface for the WMS."""
 
-__all__ = ["simulator", "wms_interface"]
+__all__ = ["WeatherStation", "SensorEnum"]
+
+from .weather_station import SensorEnum, WeatherStation
