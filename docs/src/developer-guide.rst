@@ -20,6 +20,27 @@ To start up a Modbus server running the WMS simulation, run the
 * SERVER: The name of a server in this file to start
 * DEVICE: The name of the device to simulate
 
+-----------------------------
+Configuring a Weather Station
+-----------------------------
+
+The WMS interface needs to be configured with a YAML file which specifies details about
+the sensors to be read. This has the following format:
+
+.. code-block:: YAML
+
+    Weather_Station:
+      name: "Station 1"     # Optional name (str)
+      slave_id: 1           # Modbus slave id (int)
+      poll_interval: 0.2    # Optional poll interval (float) - defaults to 1 second
+      sensors:              # Repeat block for each sensor to be read
+        wind_speed:         # Sensor name (str) - should match a value in SensorEnum
+          address: 15       # Modbus register address (int)
+          description: "..."# Sensor description (str)
+          units: m/s        # Engineering units (str)
+          scale_low: 0.0    # Value in engineering units corresponding to min ADC reading (float)
+          scale_high: 70.0  # Value in engineering units corresponding to max ADC reading (float)
+
 ---------------------------------
 Connecting to the Weather Station
 ---------------------------------
@@ -33,7 +54,13 @@ Here is a brief example demonstrating how to use the WMS Python interface:
     from ska_mid_wms.wms_interface import WeatherStation, SensorEnum
 
     logger = logging.getLogger()
-    weather_station = WeatherStation("config_file.json", logger)
+    
+    # Create the WeatherStation interface, specifying:
+    #   - path to a YAML configuration file (see above)
+    #   - hostname of the Modbus server
+    #   - port number of the Modbus server
+    #   - Logger object to use for logging
+    weather_station = WeatherStation("config_file.yaml", "localhost", 502, logger)
     weather_station.connect()
 
     # Set the polling interval (defaults to 1 second)
