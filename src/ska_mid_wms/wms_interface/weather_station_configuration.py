@@ -15,7 +15,7 @@ from cerberus import Validator  # type: ignore[import-untyped]
 SENSOR_SCHEMA: Final = {
     "type": "dict",
     "required": True,
-    "keysrules": {"type": "string", "regex": "^[a-z0-9]+(?:_[a-z12]+)*$"},
+    "keysrules": {"type": "string"},
     "valuesrules": {
         "type": "dict",
         "schema": {
@@ -62,7 +62,7 @@ WEATHER_STATION_SCHEMA: Final = {
 }
 
 
-class SensorDict(TypedDict, total=False):
+class SensorDict(TypedDict):
     """Typed Dict for a Sensor configuration.
 
     address (int)
