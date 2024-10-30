@@ -21,6 +21,7 @@ from typing import Any, Callable, Dict, Final
 
 from pymodbus.client import ModbusTcpClient
 from pymodbus.exceptions import ModbusException
+from yaml import YAMLError
 
 from .weather_station_configuration import WeatherStationDict, load_configuration
 
@@ -261,8 +262,16 @@ class WeatherStation:
         logger.info(f"Reading configuration file {config_file}...")
         try:
             config: WeatherStationDict = load_configuration(config_file)
-        except OSError as e:
+        except (OSError, UnicodeDecodeError, YAMLError) as e:
+            logger.error(
+                f"Caught {type(e)} while trying to load configuration file: "
+                f"{config_file}"
+            )
             raise ValueError(f"Error opening configuration file {config_file}") from e
+        except ValueError:
+            logger.error(f"Invalid configuration found in: {config_file}")
+            raise
+
         self._sensors: list[Sensor] = self._create_sensors(config)
         self._logger = logger
         self._polling: bool = False

@@ -99,8 +99,10 @@ def load_configuration(config_path: str) -> WeatherStationDict:
 
     :param config_path: path to the configuration file.
     :returns: validated configuration dictionary.
+    :raises: OSError if the file cannot be opened.
+    :raises: UnicodeDecodeError if the file cannot be decoded.
+    :raises: YAMLError if the YAML cannot be loaded.
     :raises: ValueError if the configuration is invalid.
-    :raises: OSError if the file cannot be loaded.
     """
     with open(config_path, "r", encoding="UTF-8") as file:
         config = yaml.safe_load(file)
