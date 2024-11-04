@@ -4,6 +4,12 @@
 		"dockerfile": "Dockerfile",
 		"context": ".."
 	},
+	"forwardPorts": [
+		10000
+	],
+	"runArgs": [
+		"--add-host=host.docker.internal:host-gateway"
+	],
 	"customizations": {
 		"vscode": {
 			"settings": {
