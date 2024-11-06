@@ -9,7 +9,7 @@
 
 import traceback
 from dataclasses import dataclass
-from typing import Any, Dict, Optional
+from typing import Any, Dict
 
 import tango.server  # type: ignore[import-untyped]
 from ska_control_model import CommunicationStatus, PowerState
@@ -52,6 +52,10 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
         super().init_device()
         self._device_state: Dict[str, WMSAttribute] = {}
         self._create_attributes()
+
+    def delete_device(self) -> None:
+        """Prepare to delete the device."""
+        self.component_manager.stop_communicating()
 
     def create_component_manager(self):
         """Create and return the component manager."""
@@ -119,8 +123,6 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
 
     def _component_state_callback(
         self,
-        fault: Optional[bool] = None,  # pylint: disable=unused-argument
-        power: Optional[PowerState] = None,  # pylint: disable=unused-argument
         **kwargs: Any,
     ) -> None:
         """Handle a change in component state.

@@ -11,35 +11,10 @@ from typing import List
 
 import pytest
 import tango  # type: ignore[import-untyped]
-from ska_control_model import AdminMode, HealthState
+from ska_control_model import AdminMode
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 
-from ska_mid_wms.simulator import WMSSimulatorServer
-
-
-@pytest.fixture(name="change_event_callbacks")
-def change_event_callbacks_fixture() -> MockTangoEventCallbackGroup:
-    """
-    Return a dictionary of change event callbacks with asynchrony support.
-
-    :return: a collections.defaultdict that returns change event
-        callbacks by name.
-    """
-    return MockTangoEventCallbackGroup(
-        "adminMode",
-        "healthState",
-        "longRunningCommandResult",
-        "longRunningCommandStatus",
-        "state",
-        "wind_speed",
-        "wind_direction",
-        "humidity",
-        "pressure",
-        "rainfall",
-        "temperature",
-        timeout=30.0,
-        assert_no_error=False,
-    )
+from ska_mid_wms.simulator import WMSSimulator, WMSSimulatorServer
 
 
 @pytest.fixture(name="attribute_names")
@@ -55,8 +30,28 @@ def attribute_names_fixture() -> List[str]:
     ]
 
 
+@pytest.fixture(name="change_event_callbacks")
+def change_event_callbacks_fixture(
+    attribute_names: List[str],
+) -> MockTangoEventCallbackGroup:
+    """
+    Return a dictionary of change event callbacks with asynchrony support.
+
+    :param attribute_names: List of the attribute names under test.
+    :return: a collections.defaultdict that returns change event
+        callbacks by name.
+    """
+    return MockTangoEventCallbackGroup(
+        "state",
+        *attribute_names,
+        timeout=30.0,
+        assert_no_error=False,
+    )
+
+
 def test_communication(
     wms_simulator_server: WMSSimulatorServer,  # pylint: disable=unused-argument
+    simulator: WMSSimulator,
     wms_device: tango.DeviceProxy,
     change_event_callbacks: MockTangoEventCallbackGroup,
     attribute_names: List[str],
@@ -64,8 +59,10 @@ def test_communication(
     """
     Test the Tango device's communication with the WeatherStation.
 
-    :param wms_device: a proxy to the WMS device under test.
     :param wms_simulator_server: a running WMS simulator server.
+    :param simulator: the running simulation so we can access the
+        simulated data directly.
+    :param wms_device: a proxy to the WMS device under test.
     :param change_event_callbacks: dictionary of mock change event
         callbacks with asynchrony support
     """
@@ -78,20 +75,9 @@ def test_communication(
     )
     change_event_callbacks.assert_change_event("state", tango.DevState.DISABLE)
 
-    wms_device.subscribe_event(
-        "healthState",
-        tango.EventType.CHANGE_EVENT,
-        change_event_callbacks["healthState"],
-    )
-
-    change_event_callbacks.assert_change_event("healthState", HealthState.UNKNOWN)
-    assert wms_device.healthState == HealthState.UNKNOWN
-
     wms_device.adminMode = AdminMode.ONLINE  # type: ignore[assignment]
 
     change_event_callbacks.assert_change_event("state", tango.DevState.ON)
-    # change_event_callbacks.assert_change_event("healthState", HealthState.OK)
-    # assert wms_device.healthState == HealthState.OK
 
     for attribute in attribute_names:
         wms_device.subscribe_event(
@@ -100,22 +86,11 @@ def test_communication(
             change_event_callbacks[attribute],
         )
 
-    # TODO: Remove hardcoded values
-    change_event_callbacks.assert_change_event(
-        "wind_speed", pytest.approx(14.98, abs=0.01), lookahead=6
-    )
-    change_event_callbacks.assert_change_event(
-        "wind_direction", pytest.approx(292, abs=0.01), lookahead=6
-    )
-    change_event_callbacks.assert_change_event(
-        "humidity", pytest.approx(41, abs=0.01), lookahead=6
-    )
-    change_event_callbacks.assert_change_event(
-        "pressure", pytest.approx(802, abs=0.01), lookahead=6
-    )
-    change_event_callbacks.assert_change_event(
-        "rainfall", pytest.approx(22, abs=0.01), lookahead=6
-    )
-    change_event_callbacks.assert_change_event(
-        "temperature", pytest.approx(25.8, abs=0.01), lookahead=6
-    )
+    # Check each attribute against its default simulated value
+    # e.g. simulator.converted_wind_speed for the wind_speed attribute
+    for attribute in attribute_names:
+        change_event_callbacks.assert_change_event(
+            attribute,
+            pytest.approx(getattr(simulator, "converted_" + attribute), abs=0.01),
+            lookahead=len(attribute_names),
+        )

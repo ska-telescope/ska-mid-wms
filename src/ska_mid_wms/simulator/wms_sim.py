@@ -189,6 +189,8 @@ class WMSSimulator:
     def wind_speed(self, value: int) -> None:
         self._wind_speed_sensor.raw_value = value
 
+    # Note: tests use getattr() to get the converted values by
+    # constructing the property names from the attributes
     @property
     def converted_wind_speed(self) -> float:
         """Wind speed in engineering units."""

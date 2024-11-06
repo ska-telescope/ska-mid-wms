@@ -19,7 +19,7 @@ import pytest
 import tango  # type: ignore[import-untyped]
 from pymodbus.client import ModbusTcpClient
 from pytest import FixtureRequest
-from ska_control_model import SimulationMode
+from ska_control_model import AdminMode, SimulationMode
 
 from ska_mid_wms.simulator import (
     WMSSimSensor,
@@ -222,6 +222,7 @@ def wms_device_fixture() -> tango.DeviceProxy:
         wms = context.get_wms_device()
         wms.simulationMode = SimulationMode.TRUE
         yield wms
+        wms.adminMode = AdminMode.OFFLINE  # type: ignore[assignment]
 
 
 class Helpers:  # pylint: disable=too-few-public-methods
