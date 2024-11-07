@@ -161,6 +161,7 @@ def wms_interface_fixture(
     )
     weather_station.connect()
     yield weather_station
+    weather_station.stop_polling()
     weather_station.disconnect()
 
 
@@ -210,10 +211,13 @@ def expected_callback_data_fixture(
 
 
 @pytest.fixture(name="wms_device")
-def wms_device_fixture() -> tango.DeviceProxy:
+def wms_device_fixture(
+    wms_simulator_server: WMSSimulatorServer,  # pylint: disable=unused-argument
+) -> tango.DeviceProxy:
     """
     Fixture that returns a proxy to the WMS Tango device under test.
 
+    :param wms_simulator_server: a running WMS simulator server.
     :yield: a proxy to the WMS Tango device under test.
     """
     harness = WMSTangoTestHarness()

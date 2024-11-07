@@ -14,7 +14,7 @@ import tango  # type: ignore[import-untyped]
 from ska_control_model import AdminMode
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
 
-from ska_mid_wms.simulator import WMSSimulator, WMSSimulatorServer
+from ska_mid_wms.simulator import WMSSimulator
 
 
 @pytest.fixture(name="attribute_names")
@@ -49,8 +49,8 @@ def change_event_callbacks_fixture(
     )
 
 
+@pytest.mark.forked
 def test_communication(
-    wms_simulator_server: WMSSimulatorServer,  # pylint: disable=unused-argument
     simulator: WMSSimulator,
     wms_device: tango.DeviceProxy,
     change_event_callbacks: MockTangoEventCallbackGroup,
@@ -59,7 +59,6 @@ def test_communication(
     """
     Test the Tango device's communication with the WeatherStation.
 
-    :param wms_simulator_server: a running WMS simulator server.
     :param simulator: the running simulation so we can access the
         simulated data directly.
     :param wms_device: a proxy to the WMS device under test.
