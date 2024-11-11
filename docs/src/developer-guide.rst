@@ -41,9 +41,9 @@ the sensors to be read. This has the following format:
           scale_low: 0.0    # Value in engineering units corresponding to min ADC reading (float)
           scale_high: 70.0  # Value in engineering units corresponding to max ADC reading (float)
 
----------------------------------
-Connecting to the Weather Station
----------------------------------
+-----------------------------
+Using the Weather Station API
+-----------------------------
 
 Here is a brief example demonstrating how to use the WMS Python interface:
 
@@ -93,3 +93,17 @@ Here is a brief example demonstrating how to use the WMS Python interface:
     weather_station.unsubscribe_data(id)
     weather_station.stop_polling()
     weather_station.disconnect()
+
+-------------------
+Tango Device Server
+-------------------
+
+A :ref:`tango_device` has been developed to publish the Weather Station automatically
+to interested clients. The following Tango device properties should be set:
+
+* *Host*: hostname of the Weather Station Modbus server
+* *Port*: port number to connect to
+* *ConfigFile*: path to a Weather Station configuration file (see `Configuring a Weather Station`_).
+
+The device's attributes are created automatically using the same names as the
+sensors defined in the supplied configuration.

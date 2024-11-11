@@ -18,6 +18,7 @@ This project is developing the Weather Monitoring System for the SKA-Mid telesco
 
    api/wms-interface
    api/wms-simulator
+   api/wms-device
 
 .. toctree::
    :maxdepth: 1
