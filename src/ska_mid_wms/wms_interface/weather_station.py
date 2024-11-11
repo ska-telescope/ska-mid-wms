@@ -149,7 +149,9 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
                     for index, value in enumerate(result.registers):
                         new_data.append(
                             WMSDatapoint(
-                                request[index], value, datetime.now(timezone.utc)
+                                request[index],
+                                value,
+                                datetime.now(timezone.utc),
                             )
                         )
                     self._push_data(new_data)
@@ -249,7 +251,11 @@ class WeatherStation:
     """Class to implement the Modbus interface to a Weather Station."""
 
     def __init__(
-        self, config_file: str, hostname: str, port: int, logger: logging.Logger
+        self,
+        config_file: str,
+        hostname: str,
+        port: int,
+        logger: logging.Logger,
     ) -> None:
         """Initialise the instance.
 
@@ -286,7 +292,10 @@ class WeatherStation:
             self._logger.error(f"Couldn't connect to address {hostname}, port {port}")
 
         self._poller = WMSPoller(
-            self._client, config["slave_id"], self._logger, config["poll_interval"]
+            self._client,
+            config["slave_id"],
+            self._logger,
+            config["poll_interval"],
         )
         self._poller.update_request_list(self._sensors)
         self._publisher = WMSPublisher(self._poller.data_queue, self._logger)
@@ -299,6 +308,11 @@ class WeatherStation:
     @poll_interval.setter
     def poll_interval(self, new_value: float) -> None:
         self._poller.poll_interval = new_value
+
+    @property
+    def available_sensors(self) -> list[Sensor]:
+        """Sensors read from the configuration file."""
+        return self._sensors
 
     def _create_sensors(self, config: WeatherStationDict) -> list[Sensor]:
         """Create the Sensor objects from the supplied configuration."""
