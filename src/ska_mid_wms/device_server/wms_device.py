@@ -91,7 +91,7 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
                 unit=sensor_config["units"],
                 fget=self._read_attribute,
             )
-            self.add_attribute(attr, self._read_attribute)
+            self.add_attribute(attr)
             self.set_change_event(sensor_name, True, False)
             self.set_archive_event(sensor_name, True, False)
 
