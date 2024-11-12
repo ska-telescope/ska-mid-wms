@@ -50,7 +50,7 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
     ) -> None:
         """Initialise the device."""
         super().init_device()
-        self._device_state: Dict[str, WMSAttribute] = {}
+        self._attribute_data: Dict[str, WMSAttribute] = {}
         self._create_attributes()
 
     def delete_device(self) -> None:
@@ -80,7 +80,7 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
             raise
         for sensor_name, sensor_config in config["sensors"].items():
             # Initialise the device state
-            self._device_state[sensor_name] = WMSAttribute(
+            self._attribute_data[sensor_name] = WMSAttribute(
                 None, AttrQuality.ATTR_INVALID, 0
             )
             attr = tango.server.attribute(
@@ -98,7 +98,7 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
     def _read_attribute(self, attribute: tango.Attribute) -> None:
         """Set the attribute's value from the current device state."""
         attr_name = attribute.get_name()
-        attr_value = self._device_state[attr_name].value
+        attr_value = self._attribute_data[attr_name].value
         if attr_value is None:
             msg = f"Attempted to read {attr_name} before a value has been received."
             self.logger.warning(msg)
@@ -109,8 +109,8 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
             )
         attribute.set_value_date_quality(
             attr_value,
-            self._device_state[attr_name].timestamp,
-            self._device_state[attr_name].quality,
+            self._attribute_data[attr_name].timestamp,
+            self._attribute_data[attr_name].quality,
         )
 
     # ----------
@@ -133,35 +133,37 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
         """
         fault_status: bool = False
         for sensor_name, value in kwargs.items():
-            if sensor_name not in self._device_state:
+            if sensor_name not in self._attribute_data:
                 self.logger.warning(
                     f"Received callback for unknown sensor: {sensor_name}"
                 )
                 continue
             try:
-                self._device_state[sensor_name].value = value["value"]
-                self._device_state[sensor_name].timestamp = value[
+                self._attribute_data[sensor_name].value = value["value"]
+                self._attribute_data[sensor_name].timestamp = value[
                     "timestamp"
                 ].timestamp()
             except (KeyError, AttributeError):
                 self.logger.error(
                     f"Received invalid callback data for {sensor_name}: {value}"
                 )
-                self._device_state[sensor_name].quality = tango.AttrQuality.ATTR_INVALID
+                self._attribute_data[sensor_name].quality = (
+                    tango.AttrQuality.ATTR_INVALID
+                )
                 fault_status = True
             else:
-                self._device_state[sensor_name].quality = tango.AttrQuality.ATTR_VALID
+                self._attribute_data[sensor_name].quality = tango.AttrQuality.ATTR_VALID
             self.push_change_event(
                 sensor_name,
-                self._device_state[sensor_name].value,
-                self._device_state[sensor_name].timestamp,
-                self._device_state[sensor_name].quality,
+                self._attribute_data[sensor_name].value,
+                self._attribute_data[sensor_name].timestamp,
+                self._attribute_data[sensor_name].quality,
             )
             self.push_archive_event(
                 sensor_name,
-                self._device_state[sensor_name].value,
-                self._device_state[sensor_name].timestamp,
-                self._device_state[sensor_name].quality,
+                self._attribute_data[sensor_name].value,
+                self._attribute_data[sensor_name].timestamp,
+                self._attribute_data[sensor_name].quality,
             )
         super()._component_state_changed(fault=fault_status, power=PowerState.ON)
 
