@@ -75,7 +75,7 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
         except ValueError:
             self.logger.error(
                 "Could not load WeatherStation configuration from file: "
-                "f {self.ConfigFile} "
+                f" {self.ConfigFile} "
             )
             raise
         for sensor_name, sensor_config in config["sensors"].items():
