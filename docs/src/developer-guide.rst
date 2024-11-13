@@ -40,6 +40,8 @@ the sensors to be read. This has the following format:
           unit: m/s         # Engineering unit (str)
           scale_low: 0.0    # Value in engineering units corresponding to min ADC reading (float)
           scale_high: 70.0  # Value in engineering units corresponding to max ADC reading (float)
+          tango_deadband: 0.2  # rel_change for the Tango attribute (float) - defaults to 0.1
+          tango_archive_deadband: 0.5 # archive_rel_change (float) - defaults to 0.1
 
 -----------------------------
 Using the Weather Station API

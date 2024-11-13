@@ -15,7 +15,7 @@ import tango.server  # type: ignore[import-untyped]
 import yaml
 from ska_control_model import CommunicationStatus, PowerState
 from ska_tango_base.base import SKABaseDevice
-from tango import AttrQuality
+from tango import AttrQuality, EnsureOmniThread
 
 from ska_mid_wms.device_server.wms_component_manager import WMSComponentManager
 from ska_mid_wms.wms_interface.weather_station_configuration import load_configuration
@@ -91,11 +91,13 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
                 access=tango.AttrWriteType.READ,
                 label=sensor_name,
                 unit=sensor_config["unit"],
+                rel_change=sensor_config["tango_deadband"],
+                archive_rel_change=sensor_config["tango_archive_deadband"],
                 fget=self._read_attribute,
             )
             self.add_attribute(attr)
-            self.set_change_event(sensor_name, True, False)
-            self.set_archive_event(sensor_name, True, False)
+            self.set_change_event(sensor_name, True, True)
+            self.set_archive_event(sensor_name, True, True)
 
     def _read_attribute(self, attribute: tango.Attribute) -> None:
         """Set the attribute's value from the current device state."""
@@ -158,18 +160,19 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
                 fault_status = True
             else:
                 self._attribute_data[sensor_name].quality = tango.AttrQuality.ATTR_VALID
-            self.push_change_event(
-                sensor_name,
-                self._attribute_data[sensor_name].value,
-                self._attribute_data[sensor_name].timestamp,
-                self._attribute_data[sensor_name].quality,
-            )
-            self.push_archive_event(
-                sensor_name,
-                self._attribute_data[sensor_name].value,
-                self._attribute_data[sensor_name].timestamp,
-                self._attribute_data[sensor_name].quality,
-            )
+            with EnsureOmniThread():  # Callback is from a separate Python thread
+                self.push_change_event(
+                    sensor_name,
+                    self._attribute_data[sensor_name].value,
+                    self._attribute_data[sensor_name].timestamp,
+                    self._attribute_data[sensor_name].quality,
+                )
+                self.push_archive_event(
+                    sensor_name,
+                    self._attribute_data[sensor_name].value,
+                    self._attribute_data[sensor_name].timestamp,
+                    self._attribute_data[sensor_name].quality,
+                )
         super()._component_state_changed(fault=fault_status, power=PowerState.ON)
 
 
