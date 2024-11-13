@@ -27,7 +27,7 @@ SENSOR_SCHEMA: Final = {
                 "type": "string",
                 "required": True,
             },
-            "units": {
+            "unit": {
                 "type": "string",
                 "required": True,
             },
@@ -67,14 +67,14 @@ class SensorDict(TypedDict):
 
     address (int)
     description (str)
-    units (str)
+    unit (str)
     scale_low (float)
     scale_high (float)
     """
 
     address: int
     description: str
-    units: str
+    unit: str
     scale_low: float
     scale_high: float
 

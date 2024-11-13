@@ -209,7 +209,7 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
         for datapoint in data:
             converted_data[datapoint.sensor.name] = {
                 "value": datapoint.sensor.convert_raw_adc(datapoint.raw_value),
-                "units": datapoint.sensor.unit,
+                "unit": datapoint.sensor.unit,
                 "timestamp": datapoint.timestamp,
             }
         self.publish_queue.put(converted_data)
@@ -360,7 +360,7 @@ class WeatherStation:
                 sensor_config["address"],
                 sensor_name,
                 sensor_config["description"],
-                sensor_config["units"],
+                sensor_config["unit"],
                 sensor_config["scale_high"],
                 sensor_config["scale_low"],
             )

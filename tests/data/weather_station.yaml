@@ -7,36 +7,36 @@ Weather_Station:
     wind_speed:
       address: 15
       description: "Wind speed"
-      units: m/s
+      unit: m/s
       scale_low: 0.0
       scale_high: 70.0
     wind_direction:
       address: 16
       description: "Wind direction"
-      units: "degrees"
+      unit: "degrees"
       scale_low: 0
       scale_high: 360
     temperature:
       address: 17
       description: "Temperature"
-      units: "Deg C"
+      unit: "Deg C"
       scale_low: -10
       scale_high: 50
     pressure:
       address: 18
       description: "Pressure"
-      units: mbar
+      unit: mbar
       scale_low: 600
       scale_high: 1100
     humidity:
       address: 19
       description: "Humidity"
-      units: "%"
+      unit: "%"
       scale_low: 0
       scale_high: 100
     rainfall:
       address: 20
       description: "Rainfall"
-      units: mm
+      unit: mm
       scale_low: 0
       scale_high: 500

@@ -12,6 +12,7 @@ from dataclasses import dataclass
 from typing import Any, Dict
 
 import tango.server  # type: ignore[import-untyped]
+import yaml
 from ska_control_model import CommunicationStatus, PowerState
 from ska_tango_base.base import SKABaseDevice
 from tango import AttrQuality
@@ -72,12 +73,13 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
         """Create the Tango device attributes and initialise the device state."""
         try:
             config = load_configuration(self.ConfigFile)
-        except ValueError:
-            self.logger.error(
+        except (ValueError, OSError, yaml.YAMLError, UnicodeDecodeError) as e:
+            message = (
                 "Could not load WeatherStation configuration from file: "
-                f" {self.ConfigFile} "
+                f"{self.ConfigFile}"
             )
-            raise
+            self.logger.error(message)
+            raise ValueError(message) from e
         for sensor_name, sensor_config in config["sensors"].items():
             # Initialise the device state
             self._attribute_data[sensor_name] = WMSAttribute(
@@ -88,7 +90,7 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
                 dtype=float,
                 access=tango.AttrWriteType.READ,
                 label=sensor_name,
-                unit=sensor_config["units"],
+                unit=sensor_config["unit"],
                 fget=self._read_attribute,
             )
             self.add_attribute(attr)
@@ -100,7 +102,10 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
         attr_name = attribute.get_name()
         attr_value = self._attribute_data[attr_name].value
         if attr_value is None:
-            msg = f"Attempted to read {attr_name} before a value has been received."
+            msg = (
+                f"{attr_name} value is None: perhaps we have "
+                "attempted to read it before a value has been received?"
+            )
             self.logger.warning(msg)
             raise tango.Except.throw_exception(
                 f"Error: {attr_name} has no value",

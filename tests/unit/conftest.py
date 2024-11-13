@@ -178,12 +178,12 @@ def disconnected_wms_interface_fixture(
 
 # Expected callback data (in polling order)
 expected_callback_data: Dict[str, Dict[str, str]] = {
-    "wind_speed": {"name": "wind_speed", "units": "m/s"},
-    "wind_direction": {"name": "wind_direction", "units": "degrees"},
-    "temperature": {"name": "temperature", "units": "Deg C"},
-    "pressure": {"name": "pressure", "units": "mbar"},
-    "humidity": {"name": "humidity", "units": "%"},
-    "rainfall": {"name": "rainfall", "units": "mm"},
+    "wind_speed": {"name": "wind_speed", "unit": "m/s"},
+    "wind_direction": {"name": "wind_direction", "unit": "degrees"},
+    "temperature": {"name": "temperature", "unit": "Deg C"},
+    "pressure": {"name": "pressure", "unit": "mbar"},
+    "humidity": {"name": "humidity", "unit": "%"},
+    "rainfall": {"name": "rainfall", "unit": "mm"},
 }
 
 

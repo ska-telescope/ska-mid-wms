@@ -53,7 +53,7 @@ class TestWeatherStation:
             value_dict = call.args[0][expected_results["name"]]
             assert isinstance(value_dict["timestamp"], datetime)
             assert isinstance(value_dict["value"], float)
-            assert value_dict["units"] == expected_results["units"]
+            assert value_dict["unit"] == expected_results["unit"]
 
     def test_unsubscribe_data(
         self,
@@ -146,7 +146,7 @@ class TestWeatherStation:
             value_dict = call.args[0][expected_results["name"]]
             assert isinstance(value_dict["timestamp"], datetime)
             assert isinstance(value_dict["value"], float)
-            assert value_dict["units"] == expected_results["units"]
+            assert value_dict["unit"] == expected_results["unit"]
 
     def test_configure_invalid_sensor(
         self, weather_station: WeatherStation, caplog: pytest.LogCaptureFixture

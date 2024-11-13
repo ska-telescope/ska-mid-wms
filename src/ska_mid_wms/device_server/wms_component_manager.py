@@ -65,45 +65,55 @@ class WMSComponentManager(BaseComponentManager):
 
     def off(self, task_callback: Optional[Callable] = None) -> tuple[TaskStatus, str]:
         """
-        Not implemented.
+        Not supported.
 
         :param task_callback: callback to be called when the status of
             the command changes
-        :raises NotImplementedError: because the WMS does not support being turned off.
         """
-        raise NotImplementedError("The WMS cannot be turned off - nothing to do.")
+        return (
+            TaskStatus.REJECTED,
+            "The OFF command is not supported - nothing to do.",
+        )
 
     def standby(
         self, task_callback: Optional[Callable] = None
     ) -> tuple[TaskStatus, str]:
         """
-        Not implemented.
+        Not supported.
 
         :param task_callback: callback to be called when the status of
             the command changes
-
-        :raises NotImplementedError: because the WMS does not support standby.
         """
-        raise NotImplementedError("The WMS cannot be put into standby - nothing to do.")
+        return (TaskStatus.REJECTED, "")
 
     def on(self, task_callback: Optional[Callable] = None) -> tuple[TaskStatus, str]:
         """
-        Not implemented.
+        Not supported.
 
         :param task_callback: callback to be called when the status of
             the command changes
-
-        :raises NotImplementedError: because the WMS does not support being turned on.
         """
-        raise NotImplementedError("The WMS cannot be turned on - nothing to do.")
+        return (TaskStatus.REJECTED, "The ON command is not supported - nothing to do.")
 
     def reset(self, task_callback: Optional[Callable] = None) -> tuple[TaskStatus, str]:
         """
-        Not implemented.
+        Not supported.
 
         :param task_callback: callback to be called when the status of
             the command changes
-
-        :raises NotImplementedError: because the WMS does not support being reset.
         """
-        raise NotImplementedError("The WMS cannot be reset - nothing to do.")
+        return (
+            TaskStatus.REJECTED,
+            "The RESET command is not supported - nothing to do.",
+        )
+
+    def abort_tasks(
+        self: BaseComponentManager, task_callback: Optional[Callable] | None = None
+    ) -> tuple[TaskStatus, str]:
+        """
+        Not supported.
+
+        :param task_callback: callback to be called when the status of
+            the command changes
+        """
+        return (TaskStatus.REJECTED, "Abort_tasks is not supported - nothing to do.")

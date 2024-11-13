@@ -37,7 +37,7 @@ the sensors to be read. This has the following format:
         wind_speed:         # Sensor name (str) - should match a value in SensorEnum
           address: 15       # Modbus register address (int)
           description: "..."# Sensor description (str)
-          units: m/s        # Engineering units (str)
+          unit: m/s         # Engineering unit (str)
           scale_low: 0.0    # Value in engineering units corresponding to min ADC reading (float)
           scale_high: 70.0  # Value in engineering units corresponding to max ADC reading (float)
 
@@ -76,9 +76,9 @@ Here is a brief example demonstrating how to use the WMS Python interface:
     # Subscribe to data and error updates
     def callback(result):
         # Result is a nested dict with the following keys:
-        #    Value: converted value (float)
-        #    Units: engineering units (str)
-        #    Timestamp: Time the response was received (datetime object)
+        #    value: converted value (float)
+        #    unit: engineering unit (str)
+        #    timestamp: Time the response was received (datetime object)
         pprint.pprint(result, indent=2)
 
     def error_callback(event):
