@@ -73,14 +73,21 @@ Here is a brief example demonstrating how to use the WMS Python interface:
     # Start polling
     weather_station.start_polling()
 
-    # Subscribe to data updates
+    # Subscribe to data and error updates
     def callback(result):
         # Result is a nested dict with the following keys:
         #    Value: converted value (float)
         #    Units: engineering units (str)
         #    Timestamp: Time the response was received (datetime object)
+        pprint.pprint(result, indent=2)
+
+    def error_callback(event):
+        # event is a dict with the following keys:
+        #    sensor_failures: the sensor names that could not be read (list[str])
+        #    message: error message (str)
+        #    timestamp: time the response was received (datetime object)
         pprint.pprint(event, indent=2)
-    id = weather_station.subscribe_data(callback)
+    id = weather_station.subscribe_data(callback, error_callback)
 
     # Unsubscribe and disconnect
     weather_station.unsubscribe_data(id)
