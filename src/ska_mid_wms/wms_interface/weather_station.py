@@ -137,13 +137,17 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
                     except ModbusException as e:
                         error_message = f"Caught {e}"
                         self._logger.error(error_message)
-                        self._push_error(request, error_message)
+                        self._push_error(
+                            request, error_message, datetime.now(timezone.utc)
+                        )
                         continue
 
                     if result.isError():
                         error_message = f"Received Modbus error: {result}"
                         self._logger.error(error_message)
-                        self._push_error(request, error_message)
+                        self._push_error(
+                            request, error_message, datetime.now(timezone.utc)
+                        )
                         continue
 
                     self._logger.debug(
@@ -211,16 +215,20 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
             }
         self.data_queue.put(converted_data)
 
-    def _push_error(self, sensor_failures: list[Sensor], error_message: str) -> None:
+    def _push_error(
+        self, sensor_failures: list[Sensor], error_message: str, timestamp: datetime
+    ) -> None:
         """Push error information to a queue for the publish task to consume.
 
         :param sensor_list: list of the Sensors which we failed to read
         :param error_message: description of the error
+        :param timestamp: timestamp of the error
         """
         self.error_queue.put(
             {
                 "sensor_failures": [sensor.name for sensor in sensor_failures],
                 "message": error_message,
+                "timestamp": timestamp,
             }
         )
 
