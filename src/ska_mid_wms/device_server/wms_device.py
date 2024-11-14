@@ -56,6 +56,7 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
 
     def delete_device(self) -> None:
         """Prepare to delete the device."""
+        self.component_manager.unsubscribe()
         self.component_manager.stop_communicating()
 
     def create_component_manager(self):

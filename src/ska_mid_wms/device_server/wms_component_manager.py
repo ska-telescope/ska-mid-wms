@@ -36,6 +36,7 @@ class WMSComponentManager(BaseComponentManager):
         self._data_callback = lambda event: component_state_callback(**event)
         try:
             self._wms_client = WeatherStation(config_file_path, hostname, port, logger)
+            self._subscription_id = self._wms_client.subscribe_data(self._data_callback)
         except ValueError as e:
             self._logger.error(f"Error creating Weather Station: {e}")
         finally:
@@ -47,17 +48,18 @@ class WMSComponentManager(BaseComponentManager):
         """Start communicating with the h/w."""
         self._wms_client.connect()
         self._wms_client.start_polling()
-        self._subscription_id = self._wms_client.subscribe_data(self._data_callback)
         self._update_communication_state(CommunicationStatus.ESTABLISHED)
 
     def stop_communicating(self):
         """Stop communicating with the h/w."""
-        if self._subscription_id != 0:
-            self._wms_client.unsubscribe_data(self._subscription_id)
-            self._subscription_id = 0
         self._wms_client.stop_polling()
         self._wms_client.disconnect()
         self._update_communication_state(CommunicationStatus.DISABLED)
+
+    def unsubscribe(self):
+        """Unsubscribe from callbacks."""
+        if self._subscription_id != 0:
+            self._wms_client.unsubscribe_data(self._subscription_id)
 
     # -----------------
     # Standard commands
