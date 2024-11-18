@@ -118,8 +118,7 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
             list[Sensor]
         ]  # Each Modbus request is a list of sensors with contiguous registers
         self._slave_id = slave_id
-        self.data_queue: queue.Queue = queue.Queue()
-        self.error_queue: queue.Queue = queue.Queue()
+        self.publish_queue: queue.Queue = queue.Queue()
         self.poll_interval = poll_interval
 
     def _poll(self, stop_event: Event) -> None:
@@ -213,7 +212,7 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
                 "units": datapoint.sensor.unit,
                 "timestamp": datapoint.timestamp,
             }
-        self.data_queue.put(converted_data)
+        self.publish_queue.put(converted_data)
 
     def _push_error(
         self, sensor_failures: list[Sensor], error_message: str, timestamp: datetime
@@ -224,7 +223,7 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
         :param error_message: description of the error
         :param timestamp: timestamp of the error
         """
-        self.error_queue.put(
+        self.publish_queue.put(
             {
                 "sensor_failures": [sensor.name for sensor in sensor_failures],
                 "message": error_message,
@@ -236,40 +235,32 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
 class WMSPublisher:
     """Class to implement publishing the new data to subscribed clients."""
 
-    def __init__(
-        self, data_queue: queue.Queue, error_queue: queue.Queue, logger: logging.Logger
-    ) -> None:
+    def __init__(self, data_queue: queue.Queue, logger: logging.Logger) -> None:
         """Initialise the instance.
 
         :param data_queue: The queue to retrieve new data from.
         """
         self._data_queue = data_queue
-        self._error_queue = error_queue
         self._logger = logger
 
         # The subscriptions dict maps a subscription id to
         # a data callback and optional error callback
         self._subscriptions: Dict[int, tuple[Callable, Callable | None]] = {}
         self._subscription_counter: int = 0
-        self._publish_thread: Thread = Thread(target=self._publish_data, daemon=True)
-        self._error_thread: Thread = Thread(target=self._publish_error, daemon=True)
+        self._publish_thread: Thread = Thread(target=self._publish, daemon=True)
         self._publish_thread.start()
-        self._error_thread.start()
 
-    def _publish_data(self) -> None:
+    def _publish(self) -> None:
         while True:
             next_item = self._data_queue.get()
             for _, callback in self._subscriptions.items():
-                callback[0](next_item)
-            self._data_queue.task_done()
-
-    def _publish_error(self) -> None:
-        while True:
-            next_item = self._error_queue.get()
-            for _, callback in self._subscriptions.items():
-                if callback[1] is not None:
+                if "sensor_failures" in next_item and callback[1] is not None:
+                    # Item is an error
                     callback[1](next_item)
-            self._error_queue.task_done()
+                else:
+                    # Item contains new data
+                    callback[0](next_item)
+            self._data_queue.task_done()
 
     def subscribe(
         self, data_callback: Callable, error_callback: Optional[Callable]
@@ -346,9 +337,7 @@ class WeatherStation:
             config["poll_interval"],
         )
         self._poller.update_request_list(self._sensors)
-        self._publisher = WMSPublisher(
-            self._poller.data_queue, self._poller.error_queue, self._logger
-        )
+        self._publisher = WMSPublisher(self._poller.publish_queue, self._logger)
 
     @property
     def poll_interval(self) -> float:
