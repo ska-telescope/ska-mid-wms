@@ -235,12 +235,12 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
 class WMSPublisher:
     """Class to implement publishing the new data to subscribed clients."""
 
-    def __init__(self, data_queue: queue.Queue, logger: logging.Logger) -> None:
+    def __init__(self, publish_queue: queue.Queue, logger: logging.Logger) -> None:
         """Initialise the instance.
 
-        :param data_queue: The queue to retrieve new data from.
+        :param publish_queue: The queue to retrieve new data from.
         """
-        self._data_queue = data_queue
+        self._publish_queue = publish_queue
         self._logger = logger
 
         # The subscriptions dict maps a subscription id to
@@ -252,7 +252,7 @@ class WMSPublisher:
 
     def _publish(self) -> None:
         while True:
-            next_item = self._data_queue.get()
+            next_item = self._publish_queue.get()
             for _, callback in self._subscriptions.items():
                 if "sensor_failures" in next_item and callback[1] is not None:
                     # Item is an error
@@ -260,7 +260,7 @@ class WMSPublisher:
                 else:
                     # Item contains new data
                     callback[0](next_item)
-            self._data_queue.task_done()
+            self._publish_queue.task_done()
 
     def subscribe(
         self, data_callback: Callable, error_callback: Optional[Callable]
