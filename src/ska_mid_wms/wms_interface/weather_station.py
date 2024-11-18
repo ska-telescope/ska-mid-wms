@@ -398,16 +398,16 @@ class WeatherStation:
     def subscribe_data(
         self, data_callback: Callable, error_callback: Optional[Callable] = None
     ) -> int:
-        """Subscribe to data updates.
+        """Subscribe to data updates and error notifications.
 
         :param data_callback: Function to call when new data is available.
-        :param error_callback: Function to call in the event of an comms error.
+        :param error_callback: Function to call in the event of a comms error.
         :return: The subscription id.
         """
         return self._publisher.subscribe(data_callback, error_callback)
 
     def unsubscribe_data(self, subscription_id: int) -> None:
-        """Unsubscribe from data updates.
+        """Unsubscribe from all updates.
 
         :param id: The id to unsubscribe.
         """
