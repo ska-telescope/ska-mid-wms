@@ -146,21 +146,27 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
                     f"Received callback for unknown sensor: {sensor_name}"
                 )
                 continue
+            # Initialise the new data from the current values in case
+            # the callback data is invalid
+            new_value = self._attribute_data[sensor_name].value
+            timestamp = self._attribute_data[sensor_name].timestamp
             try:
-                self._attribute_data[sensor_name].value = value["value"]
-                self._attribute_data[sensor_name].timestamp = value[
-                    "timestamp"
-                ].timestamp()
+                new_value = value["value"]
+                timestamp = value["timestamp"].timestamp()
             except (KeyError, AttributeError):
                 self.logger.error(
                     f"Received invalid callback data for {sensor_name}: {value}"
                 )
-                self._attribute_data[sensor_name].quality = (
-                    tango.AttrQuality.ATTR_INVALID
-                )
+                quality = tango.AttrQuality.ATTR_INVALID
                 fault_status = True
             else:
-                self._attribute_data[sensor_name].quality = tango.AttrQuality.ATTR_VALID
+                quality = tango.AttrQuality.ATTR_VALID
+            finally:
+                self._attribute_data[sensor_name] = WMSAttribute(
+                    value=new_value,
+                    timestamp=timestamp,
+                    quality=quality,
+                )
             with EnsureOmniThread():  # Callback is from a separate Python thread
                 self.push_change_event(
                     sensor_name,
