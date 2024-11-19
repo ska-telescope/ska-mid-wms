@@ -1,7 +1,7 @@
 [tool.poetry]
 include = ["MANIFEST.skao.int"]
 name = "ska-mid-wms"
-version = "0.0.1"
+version = "0.1.0"
 description = "Interface for the SKA-Mid Weather Monitoring System"
 authors = ["Emma Arandjelovic <ela@observatorysciences.co.uk>"]
 license = "BSD-3-Clause"

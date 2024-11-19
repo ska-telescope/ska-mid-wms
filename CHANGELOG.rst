@@ -1,8 +1,7 @@
 CHANGELOG
 =========
 
-Unreleased
-----------
+## 0.1.0
 
 - WOM-504: Add error callbacks
 - WOM-448: Implement Tango device server
