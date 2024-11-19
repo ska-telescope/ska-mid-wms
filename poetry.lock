@@ -2996,4 +2996,4 @@ reference = "ska-nexus"
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.10"
-content-hash = "d0af5ab8baeeb8f2ab2f169df5b9918e3355709619c3ce6699acabde80d74a13"
+content-hash = "171db5a718b23584454c3646953e853fd246986fb42c8eb8e8ccb23bb6cd5aff"
