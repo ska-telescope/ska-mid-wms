@@ -7,4 +7,4 @@
 # See LICENSE for more info.
 """This package implements the SKA-Mid Weather Monitoring System."""
 
-__all__ = ["simulator", "wms_interface"]
+__all__ = ["simulator", "wms_interface", "device_server"]

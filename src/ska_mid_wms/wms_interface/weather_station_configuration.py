@@ -27,7 +27,7 @@ SENSOR_SCHEMA: Final = {
                 "type": "string",
                 "required": True,
             },
-            "units": {
+            "unit": {
                 "type": "string",
                 "required": True,
             },
@@ -38,6 +38,14 @@ SENSOR_SCHEMA: Final = {
             "scale_high": {
                 "type": "float",
                 "required": True,
+            },
+            "tango_deadband": {
+                "type": "float",
+                "default": 0.1,
+            },
+            "tango_archive_deadband": {
+                "type": "float",
+                "default": 0.1,
             },
         },
     },
@@ -67,16 +75,20 @@ class SensorDict(TypedDict):
 
     address (int)
     description (str)
-    units (str)
+    unit (str)
     scale_low (float)
     scale_high (float)
+    tango_deadband (float)
+    tango_archive_deadband (float)
     """
 
     address: int
     description: str
-    units: str
+    unit: str
     scale_low: float
     scale_high: float
+    tango_deadband: float
+    tango_archive_deadband: float
 
 
 class WeatherStationDict(TypedDict, total=False):

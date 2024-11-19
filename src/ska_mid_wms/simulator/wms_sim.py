@@ -124,7 +124,7 @@ class WMSSimulator:
     """Simulate the Modbus registers for the Weather Station h/w."""
 
     # Initial default values (raw counts)
-    DEFAULT_WIND_SPEED: Final = 14024  # 21.4 m/s
+    DEFAULT_WIND_SPEED: Final = 14024  # 15 m/s
     DEFAULT_WIND_DIRECTION: Final = 53156  # 292 degrees
     DEFAULT_TEMPERATURE: Final = 39102  # 25.8 deg Celsius
     DEFAULT_PRESSURE: Final = 26476  # 802 mbar
@@ -189,6 +189,8 @@ class WMSSimulator:
     def wind_speed(self, value: int) -> None:
         self._wind_speed_sensor.raw_value = value
 
+    # Note: tests use getattr() to get the converted values by
+    # constructing the property names from the attributes
     @property
     def converted_wind_speed(self) -> float:
         """Wind speed in engineering units."""

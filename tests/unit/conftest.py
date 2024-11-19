@@ -16,8 +16,10 @@ from logging import Logger
 from typing import Dict, Generator
 
 import pytest
+import tango  # type: ignore[import-untyped]
 from pymodbus.client import ModbusTcpClient
 from pytest import FixtureRequest
+from ska_control_model import AdminMode, SimulationMode
 
 from ska_mid_wms.simulator import (
     WMSSimSensor,
@@ -26,6 +28,8 @@ from ska_mid_wms.simulator import (
     wms_sim,
 )
 from ska_mid_wms.wms_interface import WeatherStation
+
+from .harness import WMSTangoTestHarness
 
 
 @pytest.fixture(name="simulated_sensor")
@@ -157,6 +161,7 @@ def wms_interface_fixture(
     )
     weather_station.connect()
     yield weather_station
+    weather_station.stop_polling()
     weather_station.disconnect()
 
 
@@ -173,12 +178,12 @@ def disconnected_wms_interface_fixture(
 
 # Expected callback data (in polling order)
 expected_callback_data: Dict[str, Dict[str, str]] = {
-    "wind_speed": {"name": "wind_speed", "units": "m/s"},
-    "wind_direction": {"name": "wind_direction", "units": "degrees"},
-    "temperature": {"name": "temperature", "units": "Deg C"},
-    "pressure": {"name": "pressure", "units": "mbar"},
-    "humidity": {"name": "humidity", "units": "%"},
-    "rainfall": {"name": "rainfall", "units": "mm"},
+    "wind_speed": {"name": "wind_speed", "unit": "m/s"},
+    "wind_direction": {"name": "wind_direction", "unit": "degrees"},
+    "temperature": {"name": "temperature", "unit": "Deg C"},
+    "pressure": {"name": "pressure", "unit": "mbar"},
+    "humidity": {"name": "humidity", "unit": "%"},
+    "rainfall": {"name": "rainfall", "unit": "mm"},
 }
 
 
@@ -203,6 +208,25 @@ def expected_callback_data_fixture(
     sensors = request.node.funcargs["sensor_list"]
 
     return [expected_callback_data[sensor.value] for sensor in sensors]
+
+
+@pytest.fixture(name="wms_device")
+def wms_device_fixture(
+    wms_simulator_server: WMSSimulatorServer,  # pylint: disable=unused-argument
+) -> tango.DeviceProxy:
+    """
+    Fixture that returns a proxy to the WMS Tango device under test.
+
+    :param wms_simulator_server: a running WMS simulator server.
+    :yield: a proxy to the WMS Tango device under test.
+    """
+    harness = WMSTangoTestHarness()
+    harness.set_wms_device("tests/data/weather_station.yaml")
+    with harness as context:
+        wms = context.get_wms_device()
+        wms.simulationMode = SimulationMode.TRUE
+        yield wms
+        wms.adminMode = AdminMode.OFFLINE  # type: ignore[assignment]
 
 
 class Helpers:  # pylint: disable=too-few-public-methods
