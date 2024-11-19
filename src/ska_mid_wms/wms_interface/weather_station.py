@@ -17,7 +17,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
 from threading import Event, Thread
-from typing import Any, Callable, Dict, Final
+from typing import Any, Callable, Dict, Final, Optional
 
 from pymodbus.client import ModbusTcpClient
 from pymodbus.exceptions import ModbusException
@@ -118,7 +118,7 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
             list[Sensor]
         ]  # Each Modbus request is a list of sensors with contiguous registers
         self._slave_id = slave_id
-        self.data_queue: queue.Queue = queue.Queue()
+        self.publish_queue: queue.Queue = queue.Queue()
         self.poll_interval = poll_interval
 
     def _poll(self, stop_event: Event) -> None:
@@ -134,11 +134,19 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
                             start_address, read_count, self._slave_id
                         )
                     except ModbusException as e:
-                        self._logger.error(f"{e}")
+                        error_message = f"Caught {e}"
+                        self._logger.error(error_message)
+                        self._push_error(
+                            request, error_message, datetime.now(timezone.utc)
+                        )
                         continue
 
                     if result.isError():
-                        self._logger.error(f"Received Modbus error: {result}")
+                        error_message = f"Received Modbus error: {result}"
+                        self._logger.error(error_message)
+                        self._push_error(
+                            request, error_message, datetime.now(timezone.utc)
+                        )
                         continue
 
                     self._logger.debug(
@@ -204,7 +212,24 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
                 "units": datapoint.sensor.unit,
                 "timestamp": datapoint.timestamp,
             }
-        self.data_queue.put(converted_data)
+        self.publish_queue.put(converted_data)
+
+    def _push_error(
+        self, sensor_failures: list[Sensor], error_message: str, timestamp: datetime
+    ) -> None:
+        """Push error information to a queue for the publish task to consume.
+
+        :param sensor_list: list of the Sensors which we failed to read
+        :param error_message: description of the error
+        :param timestamp: timestamp of the error
+        """
+        self.publish_queue.put(
+            {
+                "sensor_failures": [sensor.name for sensor in sensor_failures],
+                "message": error_message,
+                "timestamp": timestamp,
+            }
+        )
 
 
 class WMSPublisher:
@@ -213,11 +238,14 @@ class WMSPublisher:
     def __init__(self, publish_queue: queue.Queue, logger: logging.Logger) -> None:
         """Initialise the instance.
 
-        :param data_queue: The queue to retrieve new data from.
+        :param publish_queue: The queue to retrieve new data from.
         """
         self._publish_queue = publish_queue
         self._logger = logger
-        self._subscriptions: Dict[int, Callable] = {}
+
+        # The subscriptions dict maps a subscription id to
+        # a data callback and optional error callback
+        self._subscriptions: Dict[int, tuple[Callable, Callable | None]] = {}
         self._subscription_counter: int = 0
         self._publish_thread: Thread = Thread(target=self._publish, daemon=True)
         self._publish_thread.start()
@@ -226,21 +254,32 @@ class WMSPublisher:
         while True:
             next_item = self._publish_queue.get()
             for _, callback in self._subscriptions.items():
-                callback(next_item)
+                if "sensor_failures" in next_item and callback[1] is not None:
+                    # Item is an error
+                    callback[1](next_item)
+                else:
+                    # Item contains new data
+                    callback[0](next_item)
             self._publish_queue.task_done()
 
-    def subscribe(self, callback: Callable) -> int:
-        """Subscribe to data updates.
+    def subscribe(
+        self, data_callback: Callable, error_callback: Optional[Callable]
+    ) -> int:
+        """Subscribe to updates.
 
-        :param callback: Function to call when new data is available.
+        :param data_callback: Function to call when new data is available.
+        :param error_callback: Function to call in event of a comms error.
         :return: The subscription id.
         """
         self._subscription_counter += 1
-        self._subscriptions[self._subscription_counter] = callback
+        self._subscriptions[self._subscription_counter] = (
+            data_callback,
+            error_callback,
+        )
         return self._subscription_counter
 
     def unsubscribe(self, subscription_id: int) -> None:
-        """Unsubscribe from data updates.
+        """Unsubscribe from all updates (data and error).
 
         :param subscription_id: The subscription id to remove.
         """
@@ -298,7 +337,7 @@ class WeatherStation:
             config["poll_interval"],
         )
         self._poller.update_request_list(self._sensors)
-        self._publisher = WMSPublisher(self._poller.data_queue, self._logger)
+        self._publisher = WMSPublisher(self._poller.publish_queue, self._logger)
 
     @property
     def poll_interval(self) -> float:
@@ -345,35 +384,23 @@ class WeatherStation:
             [sensor for sensor in self._sensors if sensor.name in sensor_names]
         )
 
-    def subscribe_data(self, callback: Callable) -> int:
-        """Subscribe to data updates.
+    def subscribe_data(
+        self, data_callback: Callable, error_callback: Optional[Callable] = None
+    ) -> int:
+        """Subscribe to data updates and error notifications.
 
-        :param callback: Function to call when new data is available.
+        :param data_callback: Function to call when new data is available.
+        :param error_callback: Function to call in the event of a comms error.
         :return: The subscription id.
         """
-        return self._publisher.subscribe(callback)
+        return self._publisher.subscribe(data_callback, error_callback)
 
     def unsubscribe_data(self, subscription_id: int) -> None:
-        """Unsubscribe from data updates.
+        """Unsubscribe from all updates.
 
         :param id: The id to unsubscribe.
         """
         self._publisher.unsubscribe(subscription_id)
-
-    # def subscribe_error(self, callback: Callable) -> int:
-    #     """Subscribe to error updates.
-
-    #     :param callback: Function to call when an error occurs.
-    #     :return: The subscription id.
-    #     """
-    #     # TODO - WOM-504
-
-    # def unsubscribe_error(self, subscription_id: int) -> None:
-    #     """Unsubscribe from error updates.
-
-    #     :param id: The id to unsubscribe.
-    #     """
-    #     # TODO - WOM-504
 
     def connect(self) -> None:
         """Connect to the device."""

@@ -8,11 +8,12 @@
 """This module provides unit tests for the WeatherStation class."""
 
 import time
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import Dict
 from unittest.mock import MagicMock
 
 import pytest
+from freezegun import freeze_time
 
 from ska_mid_wms.simulator import WMSSimulator
 from ska_mid_wms.wms_interface import SensorEnum, WeatherStation
@@ -159,4 +160,29 @@ class TestWeatherStation:
         Helpers.assert_expected_logs(
             caplog,
             ["Could not configure sensors: 'Not a sensor' is not a valid sensor."],
+        )
+
+    @freeze_time("2024-01-01")
+    def test_error_callbacks(
+        self,
+        disconnected_weather_station: WeatherStation,
+    ) -> None:
+        """Test the error callbacks in the event of a comms error.
+
+        :param disconnected_weather_station: A disconnected WeatherStation.
+        """
+        data_callback = MagicMock()
+        error_callback = MagicMock()
+        disconnected_weather_station.configure_poll_sensors([SensorEnum.HUMIDITY])
+        disconnected_weather_station.subscribe_data(data_callback, error_callback)
+        disconnected_weather_station.start_polling()
+        time.sleep(disconnected_weather_station.poll_interval)
+        data_callback.assert_not_called()
+        error_callback.assert_called_once_with(
+            {
+                "sensor_failures": ["humidity"],
+                "message": "Caught Modbus Error: "
+                "[Connection] Failed to connect[ModbusTcpClient localhost:502]",
+                "timestamp": datetime.now(timezone.utc),
+            }
         )

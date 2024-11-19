@@ -160,6 +160,17 @@ def wms_interface_fixture(
     weather_station.disconnect()
 
 
+@pytest.fixture(name="disconnected_weather_station")
+def disconnected_wms_interface_fixture(
+    logger: Logger,
+) -> Generator[WeatherStation, None, None]:
+    """Fixture that creates a WeatherStation that is not connected to a simulation."""
+    weather_station = WeatherStation(
+        "tests/data/weather_station.yaml", "localhost", 502, logger
+    )
+    yield weather_station
+
+
 # Expected callback data (in polling order)
 expected_callback_data: Dict[str, Dict[str, str]] = {
     "wind_speed": {"name": "wind_speed", "units": "m/s"},
