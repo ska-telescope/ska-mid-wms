@@ -8,3 +8,5 @@
 """This package implements the SKA-Mid Weather Monitoring System."""
 
 __all__ = ["simulator", "wms_interface", "device_server"]
+
+__version__ = "0.1.0"
