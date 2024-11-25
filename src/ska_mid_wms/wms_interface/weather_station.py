@@ -292,6 +292,10 @@ class WMSPublisher:
         """
         if subscription_id in self._subscriptions:
             del self._subscriptions[subscription_id]
+        else:
+            self._logger.warning(
+                "Could not unsubscribe from subscription with ID: %s", subscription_id
+            )
 
 
 class WeatherStation:
