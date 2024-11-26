@@ -175,6 +175,8 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
         """
         # Empty the request list and rebuild from scratch
         self._read_requests = []
+        if not sensors:
+            return
 
         # Sort the list of sensors by modbus address
         sorted_sensors: list[Sensor] = sorted(sensors)
@@ -215,7 +217,10 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
         self.publish_queue.put(converted_data)
 
     def _push_error(
-        self, sensor_failures: list[Sensor], error_message: str, timestamp: datetime
+        self,
+        sensor_failures: list[Sensor],
+        error_message: str,
+        timestamp: datetime,
     ) -> None:
         """Push error information to a queue for the publish task to consume.
 
@@ -254,9 +259,11 @@ class WMSPublisher:
         while True:
             next_item = self._publish_queue.get()
             for _, callback in self._subscriptions.items():
-                if "sensor_failures" in next_item and callback[1] is not None:
+                if "sensor_failures" in next_item:
                     # Item is an error
-                    callback[1](next_item)
+                    if callback[1] is not None:
+                        # Error callback is optional.
+                        callback[1](next_item)
                 else:
                     # Item contains new data
                     callback[0](next_item)
@@ -283,7 +290,12 @@ class WMSPublisher:
 
         :param subscription_id: The subscription id to remove.
         """
-        del self._subscriptions[subscription_id]
+        if subscription_id in self._subscriptions:
+            del self._subscriptions[subscription_id]
+        else:
+            self._logger.warning(
+                "Could not unsubscribe from subscription with ID: %s", subscription_id
+            )
 
 
 class WeatherStation:
@@ -385,7 +397,9 @@ class WeatherStation:
         )
 
     def subscribe_data(
-        self, data_callback: Callable, error_callback: Optional[Callable] = None
+        self,
+        data_callback: Callable,
+        error_callback: Optional[Callable] = None,
     ) -> int:
         """Subscribe to data updates and error notifications.
 
