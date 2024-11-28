@@ -63,14 +63,13 @@ Here is a brief example demonstrating how to use the WMS Python interface:
     #   - port number of the Modbus server
     #   - Logger object to use for logging
     weather_station = WeatherStation("config_file.yaml", "localhost", 502, logger)
-    weather_station.connect()
 
     # Set the polling interval (defaults to 1 second)
     weather_station.polling_interval = 2
 
     # Set the sensors to poll if required (defaults to the full set)
     sensors = [SensorEnum.PRESSURE, SensorEnum.RAINFALL]
-    wms.configure_poll_sensors(sensors)
+    weather_station.configure_poll_sensors(sensors)
 
     # Start polling
     weather_station.start_polling()
