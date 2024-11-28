@@ -104,11 +104,14 @@ def load_configuration(config_path: str) -> WeatherStationDict:
     :raises: YAMLError if the YAML cannot be loaded.
     :raises: ValueError if the configuration is invalid.
     """
-    with open(config_path, "r", encoding="UTF-8") as file:
-        config = yaml.safe_load(file)
+    try:
+        with open(config_path, "r", encoding="UTF-8") as file:
+            config = yaml.safe_load(file)
+    except FileNotFoundError as e:
+        raise ValueError(f"Invalid WeatherStation configuration: {e}") from e
 
     # Validate the data and apply defaults if needed
     v = Validator(WEATHER_STATION_SCHEMA)
     if v.validate(config):
         return v.normalized(config)["Weather_Station"]
-    raise ValueError(f"WeatherStation' configuration is invalid: {v.errors}")
+    raise ValueError(f"Invalid WeatherStation configuration: {v.errors}")
