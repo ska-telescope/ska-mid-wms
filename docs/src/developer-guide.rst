@@ -25,7 +25,8 @@ Configuring a Weather Station
 -----------------------------
 
 The WMS interface needs to be configured with a YAML file which specifies details about
-the sensors to be read. This has the following format:
+the sensors to be read. This has the following format (note that the Modbus address
+can either be specified in hexadecimal by using the 0x prefix, or in decimal):
 
 .. code-block:: YAML
 
@@ -35,7 +36,7 @@ the sensors to be read. This has the following format:
       poll_interval: 0.2    # Optional poll interval (float) - defaults to 1 second
       sensors:              # Repeat block for each sensor to be read
         wind_speed:         # Sensor name (str) - should match a value in SensorEnum
-          address: 15       # Modbus register address (int)
+          address: 15       # Modbus register address (int) - can be in hex or decimal
           description: "..."# Sensor description (str)
           unit: m/s         # Engineering unit (str)
           scale_low: 0.0    # Value in engineering units corresponding to min ADC reading (float)
