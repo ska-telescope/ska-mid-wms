@@ -99,6 +99,7 @@ class SensorEnum(Enum):
 class WMSPoller:  # pylint: disable=too-many-instance-attributes
     """Class to implement polling the WMS hardware."""
 
+    # pylint: disable=too-many-arguments,too-many-positional-arguments
     def __init__(
         self,
         client_lock: Lock,
