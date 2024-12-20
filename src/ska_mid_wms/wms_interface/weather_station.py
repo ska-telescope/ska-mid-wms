@@ -16,7 +16,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from enum import Enum
-from threading import Event, Thread
+from threading import Event, Lock, Thread
 from typing import Any, Callable, Dict, Final, Optional
 
 from pymodbus.client import ModbusTcpClient
@@ -101,12 +101,14 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
 
     def __init__(
         self,
+        client_lock: Lock,
         client: ModbusTcpClient,
         slave_id: int,
         logger: logging.Logger,
         poll_interval: float = 1,
     ) -> None:
         """Initialise the instance."""
+        self._client_lock = client_lock
         self._client = client
         self._logger = logger
         self._stop_event: Event = Event()
@@ -130,9 +132,10 @@ class WMSPoller:  # pylint: disable=too-many-instance-attributes
                     start_address = request[0].modbus_address
                     read_count = len(request)
                     try:
-                        result = self._client.read_input_registers(
-                            start_address, read_count, self._slave_id
-                        )
+                        with self._client_lock:
+                            result = self._client.read_input_registers(
+                                start_address, read_count, self._slave_id
+                            )
                     except ModbusException as e:
                         error_message = f"Caught {e}"
                         self._logger.error(error_message)
@@ -333,6 +336,7 @@ class WeatherStation:
         self._logger = logger
         self._polling: bool = False
 
+        self._client_lock = Lock()
         self._client = ModbusTcpClient(hostname, port=port)
         self.connect()
         if self._client.connected:
@@ -343,6 +347,7 @@ class WeatherStation:
             self._logger.error(f"Couldn't connect to address {hostname}, port {port}")
 
         self._poller = WMSPoller(
+            self._client_lock,
             self._client,
             config["slave_id"],
             self._logger,
@@ -418,16 +423,16 @@ class WeatherStation:
 
     def connect(self) -> None:
         """Connect to the device."""
-        self._client.connect()
+        with self._client_lock:
+            self._client.connect()
 
     def disconnect(self) -> None:
         """Disconnect from the device."""
-        self._client.close()
+        with self._client_lock:
+            self._client.close()
 
     def start_polling(self) -> None:
         """Start (or restart) polling the weather station data."""
-        if not self._client.connected:
-            self.connect()
         self._polling = True
         self._poller.start()
 
