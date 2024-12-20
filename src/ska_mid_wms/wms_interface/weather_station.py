@@ -319,6 +319,7 @@ class WeatherStation:
         :param port: Port number of the Modbus server.
         :param logger: A logging object.
         :raises: ValueError if the configuration could not be loaded or is invalid.
+            ConnectionError if connecting failed.
         """
         logger.info(f"Reading configuration file {config_file}...")
         try:
@@ -345,7 +346,12 @@ class WeatherStation:
                 f"Connected Modbus TCP client to address {hostname}, port {port}"
             )
         else:
-            self._logger.error(f"Couldn't connect to address {hostname}, port {port}")
+            msg = (
+                f"Failed to connect to a weather station with address {hostname}, "
+                f"port {port}"
+            )
+            self._logger.error(msg)
+            raise ConnectionError(msg)
 
         self._poller = WMSPoller(
             self._client_lock,
