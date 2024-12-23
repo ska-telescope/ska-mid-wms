@@ -305,6 +305,8 @@ class WMSPublisher:
 class WeatherStation:
     """Class to implement the Modbus interface to a Weather Station."""
 
+    # pylint: disable=too-many-instance-attributes
+
     def __init__(
         self,
         config_file: str,
@@ -334,24 +336,15 @@ class WeatherStation:
             logger.error(f"Invalid configuration found in: {config_file}")
             raise
 
+        self._hostname = hostname
+        self._port = port
         self._sensors: list[Sensor] = self._create_sensors(config)
         self._logger = logger
         self._polling: bool = False
 
         self._client_lock = Lock()
-        self._client = ModbusTcpClient(hostname, port=port)
+        self._client = ModbusTcpClient(self._hostname, port=self._port)
         self.connect()
-        if self._client.connected:
-            self._logger.info(
-                f"Connected Modbus TCP client to address {hostname}, port {port}"
-            )
-        else:
-            msg = (
-                f"Failed to connect to a weather station with address {hostname}, "
-                f"port {port}"
-            )
-            self._logger.error(msg)
-            raise ConnectionError(msg)
 
         self._poller = WMSPoller(
             self._client_lock,
@@ -429,9 +422,36 @@ class WeatherStation:
         self._publisher.unsubscribe(subscription_id)
 
     def connect(self) -> None:
-        """Connect to the device."""
+        """
+        Connect to the device.
+
+        :raises: ValueError if the configuration could not be loaded or is invalid.
+            ConnectionError if connecting failed.
+        """
+        if self._client.connected:
+            self._logger.warning(
+                "Weather station already connected, please disconnect before "
+                "connecting again."
+            )
+            return
+
         with self._client_lock:
             self._client.connect()
+            connected = self._client.connected
+
+        # Check for successful connection
+        if connected:
+            self._logger.info(
+                f"Connected Modbus TCP client to address {self._hostname}, "
+                f"port {self._port}"
+            )
+        else:
+            msg = (
+                f"Failed to connect to a weather station with address {self._hostname},"
+                f" port {self._port}"
+            )
+            self._logger.error(msg)
+            raise ConnectionError(msg)
 
     def disconnect(self) -> None:
         """Disconnect from the device."""

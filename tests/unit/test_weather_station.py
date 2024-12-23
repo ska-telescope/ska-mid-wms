@@ -7,6 +7,7 @@
 # See LICENSE for more info.
 """This module provides unit tests for the WeatherStation class."""
 
+import asyncio
 import time
 from datetime import datetime, timezone
 from typing import Dict
@@ -15,7 +16,7 @@ from unittest.mock import MagicMock
 import pytest
 from freezegun import freeze_time
 
-from ska_mid_wms.simulator import WMSSimulator
+from ska_mid_wms.simulator import WMSSimulator, WMSSimulatorServer
 from ska_mid_wms.wms_interface import SensorEnum, WeatherStation
 
 from .conftest import Helpers
@@ -165,24 +166,34 @@ class TestWeatherStation:
     @freeze_time("2024-01-01")
     def test_error_callbacks(
         self,
-        disconnected_weather_station: WeatherStation,
+        wms_simulator_server: tuple[WMSSimulatorServer, asyncio.AbstractEventLoop],
+        weather_station: WeatherStation,
     ) -> None:
         """Test the error callbacks in the event of a comms error.
 
-        :param disconnected_weather_station: A disconnected WeatherStation.
+        :param wms_simulator_server: A Modbus simulation server for WMS and its event
+            loop (used to cause an error by stopping the server).
+        :param weather_station: A WeatherStation connected to the above server.
         """
         data_callback = MagicMock()
         error_callback = MagicMock()
-        disconnected_weather_station.configure_poll_sensors([SensorEnum.HUMIDITY])
-        disconnected_weather_station.subscribe_data(data_callback, error_callback)
-        disconnected_weather_station.start_polling()
-        time.sleep(disconnected_weather_station.poll_interval)
+        weather_station.configure_poll_sensors([SensorEnum.HUMIDITY])
+        weather_station.subscribe_data(data_callback, error_callback)
+        # Stop the simulator server before polling.
+        server = wms_simulator_server[0]
+        event_loop = wms_simulator_server[1]
+        _ = asyncio.run_coroutine_threadsafe(server.stop(), event_loop).result()
+        weather_station.start_polling()
+        time.sleep(weather_station.poll_interval)
+        print("data callback calls:", data_callback.mock_calls)
         data_callback.assert_not_called()
         error_callback.assert_called_once_with(
             {
                 "sensor_failures": ["humidity"],
-                "message": "Caught Modbus Error: "
-                "[Connection] Failed to connect[ModbusTcpClient localhost:502]",
+                "message": "Received Modbus error: Modbus Error: [Input/Output] Modbus "
+                "Error: [Connection] ModbusTcpClient localhost:502: Connection "
+                "unexpectedly closed 0.000 seconds into read of 8 bytes without "
+                "response from slave before it closed connection",
                 "timestamp": datetime.now(timezone.utc),
             }
         )
