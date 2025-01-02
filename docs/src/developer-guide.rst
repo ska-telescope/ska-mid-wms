@@ -32,7 +32,7 @@ can either be specified in hexadecimal by using the 0x prefix, or in decimal):
 
     Weather_Station:
       name: "Station 1"     # Optional name (str)
-      slave_id: 1           # Modbus slave id (int)
+      slave_id: 0           # Modbus slave id (int)
       poll_interval: 0.2    # Optional poll interval (float) - defaults to 1 second
       sensors:              # Repeat block for each sensor to be read
         wind_speed:         # Sensor name (str) - should match a value in SensorEnum
