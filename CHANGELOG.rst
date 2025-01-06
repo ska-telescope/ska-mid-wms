@@ -1,6 +1,11 @@
 CHANGELOG
 =========
 
+Unreleased
+----------
+- WOM-594: Add Modbus client lock
+
+
 0.1.0
 -----
 
