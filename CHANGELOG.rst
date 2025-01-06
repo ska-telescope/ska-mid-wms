@@ -4,6 +4,7 @@ CHANGELOG
 Unreleased
 ----------
 - WOM-594: Add Modbus client lock
+- WOM-579: Add ConnectionError to WeatherStation
 
 
 0.1.0

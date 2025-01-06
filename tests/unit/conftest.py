@@ -89,7 +89,7 @@ def logger_fixture() -> logging.Logger:
 def wms_simulator_server_fixture(
     simulator_config: Dict[str, str],
     simulator: WMSSimulator,
-) -> Generator[None, None, None]:
+) -> Generator[tuple[WMSSimulatorServer, asyncio.AbstractEventLoop], None, None]:
     """Start the Modbus server in a separate Thread."""
 
     def run_event_loop(
@@ -128,7 +128,7 @@ def wms_simulator_server_fixture(
         start_server(simulator_config), event_loop
     ).result()
 
-    yield
+    yield (server, event_loop)
 
     _ = asyncio.run_coroutine_threadsafe(stop_server(server), event_loop).result()
 
@@ -159,21 +159,9 @@ def wms_interface_fixture(
     weather_station = WeatherStation(
         "tests/data/weather_station.yaml", "localhost", 502, logger
     )
-    weather_station.connect()
     yield weather_station
     weather_station.stop_polling()
     weather_station.disconnect()
-
-
-@pytest.fixture(name="disconnected_weather_station")
-def disconnected_wms_interface_fixture(
-    logger: Logger,
-) -> Generator[WeatherStation, None, None]:
-    """Fixture that creates a WeatherStation that is not connected to a simulation."""
-    weather_station = WeatherStation(
-        "tests/data/weather_station.yaml", "localhost", 502, logger
-    )
-    yield weather_station
 
 
 # Expected callback data (in polling order)
