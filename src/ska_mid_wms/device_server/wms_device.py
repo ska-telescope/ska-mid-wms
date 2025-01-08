@@ -36,6 +36,7 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
     # ----------
     # Properties
     # ----------
+    # TODO: Default hardware host address is 128.1.1.100
     Host: str = tango.server.device_property(default_value="localhost")
     Port: int = tango.server.device_property(default_value=502)
     ConfigFile: str = tango.server.device_property(

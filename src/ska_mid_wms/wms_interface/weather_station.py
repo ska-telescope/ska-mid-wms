@@ -25,6 +25,11 @@ from yaml import YAMLError
 
 from .weather_station_configuration import WeatherStationDict, load_configuration
 
+# TODO: Several possibilities for values including two sets of addresses that are scaled
+# either up to 20000 or 32768, the scales can be from 0 or the additive inverse of the
+# maximum depending on whether values can be negative or not, and a special case for
+# temperature measurements with resolution of 0.1C/lsb (see the "Summary Of Data Types
+# Used By 900MB/900EN Modules" table in the manual. Check with hardware.
 ADC_FULL_SCALE: Final = 2**16 - 1  # Max value produced by the ADC in raw counts
 
 

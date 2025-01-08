@@ -25,17 +25,18 @@ Configuring a Weather Station
 -----------------------------
 
 The WMS interface needs to be configured with a YAML file which specifies details about
-the sensors to be read. This has the following format:
+the sensors to be read. This has the following format (note that the Modbus address
+can either be specified in hexadecimal by using the 0x prefix, or in decimal):
 
 .. code-block:: YAML
 
     Weather_Station:
       name: "Station 1"     # Optional name (str)
-      slave_id: 1           # Modbus slave id (int)
+      slave_id: 0           # Modbus slave id (int)
       poll_interval: 0.2    # Optional poll interval (float) - defaults to 1 second
       sensors:              # Repeat block for each sensor to be read
         wind_speed:         # Sensor name (str) - should match a value in SensorEnum
-          address: 15       # Modbus register address (int)
+          address: 15       # Modbus register address (int) - can be in hex or decimal
           description: "..."# Sensor description (str)
           unit: m/s         # Engineering unit (str)
           scale_low: 0.0    # Value in engineering units corresponding to min ADC reading (float)
@@ -63,14 +64,13 @@ Here is a brief example demonstrating how to use the WMS Python interface:
     #   - port number of the Modbus server
     #   - Logger object to use for logging
     weather_station = WeatherStation("config_file.yaml", "localhost", 502, logger)
-    weather_station.connect()
 
     # Set the polling interval (defaults to 1 second)
     weather_station.polling_interval = 2
 
     # Set the sensors to poll if required (defaults to the full set)
     sensors = [SensorEnum.PRESSURE, SensorEnum.RAINFALL]
-    wms.configure_poll_sensors(sensors)
+    weather_station.configure_poll_sensors(sensors)
 
     # Start polling
     weather_station.start_polling()
