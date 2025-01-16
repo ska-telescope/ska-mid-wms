@@ -4,8 +4,6 @@ SKA-Mid Weather Monitoring System
 
 This project is developing the Weather Monitoring System for the SKA-Mid telescope.
 
-.. automodule: ska_mid_wms
-
 .. toctree::
    :maxdepth: 2
    :caption: How-To Guides
@@ -16,8 +14,6 @@ This project is developing the Weather Monitoring System for the SKA-Mid telesco
    :maxdepth: 2
    :caption: Reference
 
-   api/wms-interface
-   api/wms-simulator
    api/wms-device
 
 .. toctree::

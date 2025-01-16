@@ -4,5 +4,5 @@
 Weather Monitoring System Tango Device
 ======================================
 
-.. autoclass:: ska_mid_wms.device_server.WMSDevice
+.. autoclass:: ska_mid_wms.WMSDevice
     :members:

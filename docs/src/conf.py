@@ -94,6 +94,7 @@ html_context = {}
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.10/", None),
     "asyncua": ("https://opcua-asyncio.readthedocs.io/en/latest/", None),
+    "ska-mid-wms-interface": ("https://developer.skao.int/projects/ska-mid-wms-interface/en/latest/", None),
 }
 
 # nitpicky = True
