@@ -16,30 +16,14 @@ from logging import Logger
 from typing import Dict, Generator
 
 import pytest
-import tango  # type: ignore[import-untyped]
+import tango
 from pymodbus.client import ModbusTcpClient
 from pytest import FixtureRequest
 from ska_control_model import AdminMode, SimulationMode
-
-from ska_mid_wms.simulator import (
-    WMSSimSensor,
-    WMSSimulator,
-    WMSSimulatorServer,
-    wms_sim,
-)
-from ska_mid_wms.wms_interface import WeatherStation
+from ska_mid_wms_interface import WeatherStation
+from ska_mid_wms_interface.simulator import WMSSimulator, WMSSimulatorServer, wms_sim
 
 from .harness import WMSTangoTestHarness
-
-
-@pytest.fixture(name="simulated_sensor")
-def simulated_sensor_fixture() -> WMSSimSensor:
-    """
-    Fixture to return a WMSSimSensor object.
-
-    :return: a WMSSimSensor to be used in these tests.
-    """
-    return WMSSimSensor(0, 100, 21678, 1)
 
 
 @pytest.fixture(name="simulator")

@@ -10,11 +10,10 @@
 from typing import List
 
 import pytest
-import tango  # type: ignore[import-untyped]
+import tango
 from ska_control_model import AdminMode
+from ska_mid_wms_interface.simulator import WMSSimulator
 from ska_tango_testing.mock.tango import MockTangoEventCallbackGroup
-
-from ska_mid_wms.simulator import WMSSimulator
 
 
 @pytest.fixture(name="attribute_names")
