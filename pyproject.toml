@@ -1,12 +1,13 @@
 [tool.poetry]
 include = ["MANIFEST.skao.int"]
 name = "ska-mid-wms"
-version = "0.1.0"
+version = "0.2.0"
 description = "Interface for the SKA-Mid Weather Monitoring System"
 authors = ["Emma Arandjelovic <ela@observatorysciences.co.uk>"]
 license = "BSD-3-Clause"
 readme = "README.md"
 repository = "https://gitlab.com/ska-telescope/ska-mid-wms"
+documentation = "https://developer.skao.int/projects/ska-mid-wms"
 
 [[tool.poetry.source]]
 name = "ska-nexus"
