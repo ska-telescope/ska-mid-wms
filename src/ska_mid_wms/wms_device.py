@@ -11,14 +11,14 @@ import traceback
 from dataclasses import dataclass
 from typing import Any, Dict
 
-import tango.server  # type: ignore[import-untyped]
+import tango.server
 import yaml
 from ska_control_model import CommunicationStatus, PowerState
+from ska_mid_wms_interface import load_weather_station_configuration
 from ska_tango_base.base import SKABaseDevice
 from tango import AttrQuality, EnsureOmniThread
 
-from ska_mid_wms.device_server.wms_component_manager import WMSComponentManager
-from ska_mid_wms.wms_interface.weather_station_configuration import load_configuration
+from ska_mid_wms.wms_component_manager import WMSComponentManager
 
 
 @dataclass
@@ -74,7 +74,7 @@ class WMSDevice(SKABaseDevice[WMSComponentManager]):
     def _create_attributes(self):
         """Create the Tango device attributes and initialise the device state."""
         try:
-            config = load_configuration(self.ConfigFile)
+            config = load_weather_station_configuration(self.ConfigFile)
         except (ValueError, OSError, yaml.YAMLError, UnicodeDecodeError) as e:
             message = (
                 "Could not load WeatherStation configuration from file: "

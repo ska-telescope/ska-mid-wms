@@ -13,12 +13,9 @@ from contextlib import contextmanager
 from types import TracebackType
 from typing import Any, Callable, Iterator
 
-import tango  # type: ignore[import-untyped]
-from ska_tango_testing.harness import (  # type: ignore[import-untyped]
-    TangoTestHarness,
-    TangoTestHarnessContext,
-)
-from tango.server import Device  # type: ignore[import-untyped]
+from ska_tango_testing.harness import TangoTestHarness, TangoTestHarnessContext
+from tango import DeviceProxy
+from tango.server import Device
 
 DEFAULT_WEATHER_STATION_LABEL = "s1"
 
@@ -53,7 +50,7 @@ class WMSTangoTestHarnessContext:  # pylint: disable=too-few-public-methods
         self._wms_label = wms_label
         self._tango_context = tango_context
 
-    def get_wms_device(self) -> tango.DeviceProxy:
+    def get_wms_device(self) -> DeviceProxy:
         """
         Get a proxy to the WMS Tango device.
 
@@ -79,7 +76,7 @@ class WMSTangoTestHarness:
         self: WMSTangoTestHarness,
         config_file: str,
         address: tuple[str, int] | None = None,
-        device_class: type[Device] | str = "ska_mid_wms.device_server.WMSDevice",
+        device_class: type[Device] | str = "ska_mid_wms.WMSDevice",
     ) -> None:
         """
         Set the WMS Tango device in the test harness.

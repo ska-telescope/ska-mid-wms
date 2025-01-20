@@ -11,9 +11,8 @@ import logging
 from typing import Callable, Optional
 
 from ska_control_model import CommunicationStatus, TaskStatus
+from ska_mid_wms_interface import WeatherStation
 from ska_tango_base.base import BaseComponentManager, CommunicationStatusCallbackType
-
-from ska_mid_wms.wms_interface import WeatherStation
 
 
 class WMSComponentManager(BaseComponentManager):

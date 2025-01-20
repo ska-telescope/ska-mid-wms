@@ -5,8 +5,11 @@
 #
 # Distributed under the terms of the BSD 3-clause new license.
 # See LICENSE for more info.
-"""This package implements the SKA-Mid Weather Monitoring System."""
+"""This package implements the SKA-Mid Weather Monitoring System Tango device server."""
 
-__all__ = ["simulator", "wms_interface", "device_server"]
+from .wms_component_manager import WMSComponentManager
+from .wms_device import WMSDevice
+
+__all__ = ["WMSDevice", "WMSComponentManager"]
 
 __version__ = "0.1.0"
