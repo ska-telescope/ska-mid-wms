@@ -44,4 +44,5 @@ sensors defined in the supplied configuration.
 Running a simulation server
 ---------------------------
 
-The WMS simulator is contained in the :ref:`ska-mid-wms-interface` package.
+The WMS simulator is contained in the 
+`ska-mid-wms-interface <https://developer.skao.int/projects/ska-mid-wms>`_ package.
