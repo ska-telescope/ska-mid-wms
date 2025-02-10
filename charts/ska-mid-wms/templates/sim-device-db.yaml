@@ -1,0 +1,25 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wms-sim
+  namespace: wms
+spec:
+  containers:
+  - name: wms-sim
+    image: wms_sim_helm_dev:latest
+    imagePullPolicy: IfNotPresent
+    ports:
+    - containerPort: 80
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: wms-tango
+  namespace: wms
+spec:
+  containers:
+  - name: wms-tango
+    image: ska-mid-wms-device
+    imagePullPolicy: IfNotPresent
+    ports:
+    - containerPort: 80
