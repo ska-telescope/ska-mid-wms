@@ -68,3 +68,6 @@ line-length = 88
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+WMSDevice = "ska_mid_wms.wms_device:main"

@@ -49,3 +49,7 @@ ENV VIRTUAL_ENV=/app
 ENV PATH="$VIRTUAL_ENV/bin:$PATH"
 
 COPY --from=build $VIRTUAL_ENV $VIRTUAL_ENV
+
+ENTRYPOINT [ "WMSDevice" ]
+
+CMD [ "wms-tango" ]
