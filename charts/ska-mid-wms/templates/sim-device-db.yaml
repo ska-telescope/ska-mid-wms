@@ -1,3 +1,6 @@
+{{- define "debug.print" -}}
+{{- . | mustToPrettyJson | printf "\nThe JSON output of the dumped var is: \n%s" | fail }}
+{{- end -}}
 apiVersion: v1
 kind: Pod
 metadata:
@@ -23,4 +26,3 @@ spec:
     imagePullPolicy: IfNotPresent
     ports:
     - containerPort: 80
----
