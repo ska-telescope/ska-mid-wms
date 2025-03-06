@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+Unreleased
+----------
+- WOM-563: Add Helm charts for 5 WMS Tango devices
+
 0.3.0
 ----------
 - WOM-563: Add Dockerfile for Tango image

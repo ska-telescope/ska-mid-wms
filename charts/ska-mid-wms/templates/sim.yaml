@@ -1,0 +1,46 @@
+{{- if .Values.simulator.enabled }}
+{{- range $i, $number := .Values.simulator.weatherStations }}
+apiVersion: v1
+kind: Service
+metadata:
+  name: {{ $.Values.simulator.name }}-{{ $number }}
+  labels:
+    component: {{ $.Values.simulator.name }}-{{ $number }}
+spec:
+  type: LoadBalancer
+  selector:
+    component: {{ $.Values.simulator.name }}-{{ $number }}
+  ports:
+  - name: sim-modbus-{{ $number }}
+    protocol: TCP
+    port: 1502
+    targetPort: 1502
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: {{ $.Values.simulator.name }}-{{ $number }}
+  labels:
+    component: {{ $.Values.simulator.name }}-{{ $number }}
+spec:
+  serviceName: {{ $.Values.simulator.name }}-{{ $number }}
+  selector:
+    matchLabels:
+      component: {{ $.Values.simulator.name }}-{{ $number }}
+  template:
+    metadata:
+      labels:
+        component: {{ $.Values.simulator.name }}-{{ $number }}
+    spec:
+      containers:
+        - name: {{ $.Values.simulator.name }}-{{ $number }}
+          image: "{{ $.Values.simulator.containers.registry }}/{{ $.Values.simulator.containers.image }}:{{ $.Values.simulator.containers.tag }}"
+          imagePullPolicy: {{ $.Values.simulator.containers.pullPolicy }}
+          env:
+            - name: WMS_SIM_HOST
+              valueFrom:
+                fieldRef:
+                  fieldPath: status.podIP
+---
+{{- end }}
+{{- end }}

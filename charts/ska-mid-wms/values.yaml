@@ -1,0 +1,167 @@
+# Default values for ska-mid-wms.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+ska-tango-base:
+  enabled: true
+  itango:
+    enabled: true
+
+global:
+  annotations:
+    app.gitlab.com/app: taranta
+    app.gitlab.com/env: taranta
+  minikube: true
+  tango_host: tango-databaseds:10000
+  cluster_domain: cluster.local
+  labels:
+    app: "ska-mid-wms"
+  operator: false
+
+dsconfig:
+  image:
+    registry: artefact.skao.int
+    image: ska-tango-images-tango-dsconfig
+    tag: 1.8.0
+    pullPolicy: IfNotPresent
+
+deviceServers:
+  wms0:
+    image: 
+      registry: artefact.skao.int
+      image: ska-mid-wms
+      tag: 0.3.0
+      pullPolicy: IfNotPresent
+    entrypoints:
+      - name: ska_mid_wms.wms_device.WMSDevice
+    command: "/app/bin/python /data/WMSDevice.py"
+    instances: ["wms0"]
+    server:
+      name: "WMSDevice"
+      instances:
+      - name: "wms0"
+        classes:
+        - name: WMSDevice
+          devices:
+            - dev01:
+              name: "mid/wms/0"
+              properties:
+              - name: "Host"
+                values:
+                - "wms-sim-0"
+              - name: "Port"
+                values:
+                - "1502"
+  wms1:
+    image: 
+      registry: artefact.skao.int
+      image: ska-mid-wms
+      tag: 0.3.0
+      pullPolicy: IfNotPresent
+    entrypoints:
+      - name: ska_mid_wms.wms_device.WMSDevice
+    command: "/app/bin/python /data/WMSDevice.py"
+    instances: ["wms1"]
+    server:
+      name: "WMSDevice"
+      instances:
+      - name: "wms1"
+        classes:
+        - name: WMSDevice
+          devices:
+            - dev01:
+              name: "mid/wms/1"
+              properties:
+              - name: "Host"
+                values:
+                - "wms-sim-1"
+              - name: "Port"
+                values:
+                - "1502"
+  wms2:
+    image: 
+      registry: artefact.skao.int
+      image: ska-mid-wms
+      tag: 0.3.0
+      pullPolicy: IfNotPresent
+    entrypoints:
+      - name: ska_mid_wms.wms_device.WMSDevice
+    command: "/app/bin/python /data/WMSDevice.py"
+    instances: ["wms2"]
+    server:
+      name: "WMSDevice"
+      instances:
+      - name: "wms2"
+        classes:
+        - name: WMSDevice
+          devices:
+            - dev01:
+              name: "mid/wms/2"
+              properties:
+              - name: "Host"
+                values:
+                - "wms-sim-2"
+              - name: "Port"
+                values:
+                - "1502"
+  wms3:
+    image: 
+      registry: artefact.skao.int
+      image: ska-mid-wms
+      tag: 0.3.0
+      pullPolicy: IfNotPresent
+    entrypoints:
+      - name: ska_mid_wms.wms_device.WMSDevice
+    command: "/app/bin/python /data/WMSDevice.py"
+    instances: ["wms3"]
+    server:
+      name: "WMSDevice"
+      instances:
+      - name: "wms3"
+        classes:
+        - name: WMSDevice
+          devices:
+            - dev01:
+              name: "mid/wms/3"
+              properties:
+              - name: "Host"
+                values:
+                - "wms-sim-3"
+              - name: "Port"
+                values:
+                - "1502"
+  wms4:
+    image: 
+      registry: artefact.skao.int
+      image: ska-mid-wms
+      tag: 0.3.0
+      pullPolicy: IfNotPresent
+    entrypoints:
+      - name: ska_mid_wms.wms_device.WMSDevice
+    command: "/app/bin/python /data/WMSDevice.py"
+    instances: ["wms4"]
+    server:
+      name: "WMSDevice"
+      instances:
+      - name: "wms4"
+        classes:
+        - name: WMSDevice
+          devices:
+            - dev01:
+              name: "mid/wms/4"
+              properties:
+              - name: "Host"
+                values:
+                - "wms-sim-4"
+              - name: "Port"
+                values:
+                - "1502"
+
+simulator:
+  weatherStations: ["0", "1", "2", "3", "4"]
+  enabled: true
+  name: wms-sim
+  containers:
+    registry: artefact.skao.int
+    image: ska-mid-wms-interface
+    tag: 0.2.0
+    pullPolicy: IfNotPresent
