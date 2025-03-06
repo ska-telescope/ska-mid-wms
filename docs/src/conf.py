@@ -19,7 +19,7 @@ copyright = "2024, SKAO"
 author = "Team Wombat"
 
 # The full version, including alpha/beta/rc tags
-release = "0.2.0"
+release = "0.3.0"
 
 
 # -- General configuration ---------------------------------------------------
@@ -94,7 +94,10 @@ html_context = {}
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3.10/", None),
     "pymodbus": ("https://pymodbus.readthedocs.io/en/latest/", None),
-    "ska-mid-wms-interface": ("https://developer.skao.int/projects/ska-mid-wms-interface/en/latest/", None),
+    "ska-mid-wms-interface": (
+        "https://developer.skao.int/projects/ska-mid-wms-interface/en/latest/",
+        None,
+    ),
 }
 
 # nitpicky = True
