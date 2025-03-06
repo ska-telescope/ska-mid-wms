@@ -1,7 +1,7 @@
 [tool.poetry]
 include = ["MANIFEST.skao.int"]
 name = "ska-mid-wms"
-version = "0.2.0"
+version = "0.3.0"
 description = "Interface for the SKA-Mid Weather Monitoring System"
 authors = ["Emma Arandjelovic <ela@observatorysciences.co.uk>"]
 license = "BSD-3-Clause"
@@ -15,7 +15,7 @@ url = "https://artefact.skao.int/repository/pypi-all/simple"
 
 [tool.poetry.dependencies]
 python = "^3.10,<3.13"           # PyTango 9.x is incompatible with Python 3.13.
-ska-mid-wms-interface = "^0.1.0"
+ska-mid-wms-interface = "^0.2.0"
 # Downgrade aiohttp to a pre 3.9.0 version:
 # This is necessary when starting the server from a separate Thread for the tests
 # otherwise we get a "variable 'module' referenced before assignment" exception when
@@ -27,8 +27,8 @@ numpy = "^1.26.4"
 types-pyyaml = "^6.0.12.20240917"
 pyyaml = "^6.0.2"
 ska-tango-base = "^1.2.0"
-pytango = "^9.5.0,!=9.5.1"
-# Serious regression in 9.5.1
+ska-control-model = "^1.1.1"
+pytango = "^9.5.0,!=9.5.1" # Serious regression in 9.5.1
 ska-tango-testing = "^0.7.2"
 
 [tool.poetry.group.dev.dependencies]

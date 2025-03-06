@@ -1,6 +1,10 @@
 CHANGELOG
 =========
 
+0.3.0
+----------
+- WOM-563: Add Dockerfile for Tango image
+
 0.2.0
 ----------
 - WOM-608: Refactor package with ``ska-mid-wms-interface`` as dependency
