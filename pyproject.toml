@@ -27,8 +27,8 @@ numpy = "^1.26.4"
 types-pyyaml = "^6.0.12.20240917"
 pyyaml = "^6.0.2"
 ska-tango-base = "^1.2.0"
-pytango = "^9.5.0,!=9.5.1"
-# Serious regression in 9.5.1
+ska-control-model = "^1.1.1"
+pytango = "^9.5.0,!=9.5.1" # Serious regression in 9.5.1
 ska-tango-testing = "^0.7.2"
 
 [tool.poetry.group.dev.dependencies]
