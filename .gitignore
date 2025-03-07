@@ -51,3 +51,6 @@ logs/
 
 # Optional git hooks linked from .make submodule
 resources/git-hooks
+
+# Helm
+charts/ska-mid-wms/charts/
